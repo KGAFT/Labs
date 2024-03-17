@@ -42,6 +42,8 @@ void DXRenderTargetView::clearDepthAttachments(ID3D11DeviceContext* context) {
 void DXRenderTargetView::bind(ID3D11DeviceContext* context, uint32_t width, uint32_t height, int curImage) {
     vp.Width = width;
     vp.Height = height;
+    vp.TopLeftX = 0;
+    vp.TopLeftY = 0;
     context->RSSetViewports(1, &vp);
     if (curImage < 0) {
         context->OMSetRenderTargets(renderTargetViews.size(), renderTargetViews.data(), depthView);

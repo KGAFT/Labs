@@ -46,6 +46,10 @@ DXSwapChain* DXDevice::getSwapChain(Window* window) {
 	return swapChains[window];
 }
 
+ID3D11Device* DXDevice::getDevice() {
+	return device;
+}
+
 
 DXSwapChain* DXDevice::createSwapChain(Window* window) {
 	DXGI_SWAP_CHAIN_DESC desc;

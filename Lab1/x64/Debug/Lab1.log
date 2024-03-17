@@ -1,1 +1,5 @@
-﻿  Lab1.vcxproj -> C:\Users\kgaft\Documents\Labs\Lab1\x64\Debug\Lab1.exe
+﻿  Lab1.cpp
+C:\Users\kgaft\Documents\Labs\Lab1\Lab1.cpp(28,101): warning C4267: 'argument': conversion from 'size_t' to 'uint32_t', possible loss of data
+C:\Users\kgaft\Documents\Labs\Lab1\Lab1.cpp(32,69): warning C4267: 'argument': conversion from 'size_t' to 'uint32_t', possible loss of data
+C:\Users\kgaft\Documents\Labs\Lab1\Lab1.cpp(55,29): warning C4305: '+=': truncation from 'double' to 'float'
+  Lab1.vcxproj -> C:\Users\kgaft\Documents\Labs\Lab1\x64\Debug\Lab1.exe
