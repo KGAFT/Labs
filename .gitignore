@@ -1,5 +1,4 @@
 /out
-/.vs
 /cmake-build-debug
 /cmake-build-release
 /LibNativeWin
@@ -15,8 +14,6 @@
 /*build*
 /cmake-build-debug*
 /cmake-build-release*
-/Debug
-/Release
 # Prerequisites
 *.d
 

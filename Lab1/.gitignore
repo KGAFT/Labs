@@ -1,5 +1,4 @@
 /out
-/.vs
 /cmake-build-debug
 /cmake-build-release
 /LibNativeWin
@@ -17,8 +16,6 @@
 /cmake-build-release*
 # Prerequisites
 *.d
-/Debug
-/Release
 
 # Compiled Object files
 *.slo
