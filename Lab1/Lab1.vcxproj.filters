@@ -18,53 +18,62 @@
     <ClCompile Include="Lab1.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Window.cpp">
+    <ClCompile Include="Window\Window.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="DXDevice.cpp">
+    <ClCompile Include="DXDevice\DXDevice.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="DXSwapChain.cpp">
+    <ClCompile Include="DXDevice\DXSwapChain.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="DXRenderTargetView.cpp">
+    <ClCompile Include="DXDevice\DXRenderTargetView.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Shader.cpp">
+    <ClCompile Include="DXShader\Shader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ConstantBuffer.cpp">
+    <ClCompile Include="DXShader\ConstantBuffer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Renderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Window.h">
+    <ClInclude Include="Window\Window.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="DXDevice.h">
+    <ClInclude Include="DXDevice\DXDevice.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="DXSwapChain.h">
+    <ClInclude Include="DXDevice\DXSwapChain.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="DXRenderTargetView.h">
+    <ClInclude Include="DXDevice\DXRenderTargetView.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Shader.h">
+    <ClInclude Include="DXShader\Shader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="VertexBuffer.h">
+    <ClInclude Include="DXShader\VertexBuffer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="IndexBuffer.h">
+    <ClInclude Include="DXShader\IndexBuffer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ConstantBuffer.h">
+    <ClInclude Include="DXShader\ConstantBuffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Camera\Camera.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Renderer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="VertexShader.hlsl" />
-    <Text Include="PixelShader.hlsl" />
+    <Text Include="Shaders\VertexShader.hlsl" />
+    <Text Include="Shaders\PixelShader.hlsl" />
   </ItemGroup>
 </Project>

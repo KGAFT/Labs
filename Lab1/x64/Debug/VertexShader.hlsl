@@ -11,6 +11,10 @@ struct VS_OUTPUT
     float4 color: COLOR;
 };
 
+cbuffer dataR: register(b0)
+{
+    matrix mWorldViewProj;
+};
 
 
 VS_OUTPUT main(VS_INPUT vsInput)

@@ -4,12 +4,14 @@ struct PixelShaderInput
 	float4 color: COLOR;
 };
 
-cbuffer constant: register(b0)
+cbuffer dataR: register(b0)
 {
-	float1 color;
+	matrix mWorldViewProj;
 };
 
 float4 main(PixelShaderInput psInput) : SV_Target
 {
-	   return float4(color, 0, 0, 1);
+	   float temp[4] = (float[4])psInput.color.rgba;
+	   temp[0] *= mWorldViewProj._11;
+	   return (float4)temp;
 }

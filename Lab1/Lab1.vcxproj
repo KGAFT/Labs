@@ -82,6 +82,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <CopyLocalDeploymentContent>true</CopyLocalDeploymentContent>
+    <CopyLocalProjectReference>true</CopyLocalProjectReference>
+    <CopyLocalDebugSymbols>true</CopyLocalDebugSymbols>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -143,35 +145,43 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="ConstantBuffer.cpp" />
-    <ClCompile Include="DXDevice.cpp" />
-    <ClCompile Include="DXRenderTargetView.cpp" />
-    <ClCompile Include="DXSwapChain.cpp" />
+    <ClCompile Include="DXShader\ConstantBuffer.cpp" />
+    <ClCompile Include="DXDevice\DXDevice.cpp" />
+    <ClCompile Include="DXDevice\DXRenderTargetView.cpp" />
+    <ClCompile Include="DXDevice\DXSwapChain.cpp" />
+    <ClCompile Include="Engine\Renderer.cpp" />
     <ClCompile Include="Lab1.cpp" />
-    <ClCompile Include="Shader.cpp" />
-    <ClCompile Include="Window.cpp" />
+    <ClCompile Include="DXShader\Shader.cpp" />
+    <ClCompile Include="Window\Window.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ConstantBuffer.h" />
-    <ClInclude Include="DXDevice.h" />
-    <ClInclude Include="DXRenderTargetView.h" />
-    <ClInclude Include="DXSwapChain.h" />
-    <ClInclude Include="IndexBuffer.h" />
-    <ClInclude Include="Shader.h" />
-    <ClInclude Include="VertexBuffer.h" />
-    <ClInclude Include="Window.h" />
+    <ClInclude Include="Engine\Camera\Camera.h" />
+    <ClInclude Include="DXShader\ConstantBuffer.h" />
+    <ClInclude Include="DXDevice\DXDevice.h" />
+    <ClInclude Include="DXDevice\DXRenderTargetView.h" />
+    <ClInclude Include="DXDevice\DXSwapChain.h" />
+    <ClInclude Include="DXShader\IndexBuffer.h" />
+    <ClInclude Include="DXShader\Shader.h" />
+    <ClInclude Include="DXShader\VertexBuffer.h" />
+    <ClInclude Include="Engine\Renderer.h" />
+    <ClInclude Include="Window\Window.h" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="PixelShader.hlsl">
+    <Text Include="Shaders\PixelShader.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
       <FileType>Document</FileType>
     </Text>
-    <Text Include="VertexShader.hlsl">
+    <Text Include="Shaders\VertexShader.hlsl">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">false</ExcludedFromBuild>
       <DeploymentContent Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</DeploymentContent>
       <FileType>Document</FileType>
     </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="Shaders\*.hlsl">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
