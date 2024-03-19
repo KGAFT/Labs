@@ -1,8 +1,8 @@
 #include "DXSwapChain.h"
 #include <stdexcept>
 
-DXSwapChain::DXSwapChain(IDXGIFactory* factory, IDXGISwapChain* pSwapChain, ID3D11Device* device, HWND windowHandle, uint32_t width, uint32_t height) : 
-	factory(factory), swapChain(pSwapChain), device(device), windowHandle(windowHandle){
+DXSwapChain::DXSwapChain(IDXGIFactory* factory, IDXGISwapChain* pSwapChain, ID3D11Device* device, HWND windowHandle, uint32_t width, uint32_t height, const char* name) : 
+	factory(factory), swapChain(pSwapChain), device(device), windowHandle(windowHandle), name(name){
 	swapChainTextures.resize(DX_SWAPCHAIN_DEFAULT_BUFFER_AMOUNT);
 	for (uint32_t i = 0; i < DX_SWAPCHAIN_DEFAULT_BUFFER_AMOUNT; i++) {
 		if (FAILED(pSwapChain->GetBuffer(0, IID_PPV_ARGS(&swapChainTextures[i])))) {
@@ -11,7 +11,7 @@ DXSwapChain::DXSwapChain(IDXGIFactory* factory, IDXGISwapChain* pSwapChain, ID3D
 	}
 	
 	
-	rtv = new DXRenderTargetView(device,  swapChainTextures, width, height);
+	rtv = new DXRenderTargetView(device,  swapChainTextures, width, height, name);
 }
 
 void DXSwapChain::resize(uint32_t width, uint32_t height) {
@@ -22,7 +22,7 @@ void DXSwapChain::resize(uint32_t width, uint32_t height) {
 			throw std::runtime_error("Failed to acquire swap chain image");
 		}
 	}
-	rtv->resize(swapChainTextures , width, height);
+	rtv->resize(swapChainTextures , width, height, name);
 }
 
 void DXSwapChain::bind(ID3D11DeviceContext* context, uint32_t width, uint32_t height) {

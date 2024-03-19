@@ -20,11 +20,11 @@ private:
 	IDXGIFactory* dxgiFactory = nullptr;
 	std::map<Window*, DXSwapChain*> swapChains;
 public:
-	DXSwapChain* getSwapChain(Window* window);
+	DXSwapChain* getSwapChain(Window* window, const char* possibleName = nullptr);
 	ID3D11DeviceContext* getDeviceContext();
 	ID3D11Device* getDevice();
 private:
-	DXSwapChain* createSwapChain(Window* window);
+	DXSwapChain* createSwapChain(Window* window, const char* possibleName = nullptr);
 	void initializeDxgi();
 public:
 	~DXDevice();

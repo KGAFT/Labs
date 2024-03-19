@@ -9,7 +9,7 @@ void Renderer::resizeCallback(uint32_t width, uint32_t height) {
 }
 
 Renderer::Renderer(Window* window) : engineWindow(window) {
-	swapChain = device.getSwapChain(window);
+	swapChain = device.getSwapChain(window, "Lab 1 default swap chain");
     window->addResizeCallback(resizeCallback);
     loadShader();
     loadCube();
@@ -36,8 +36,8 @@ void Renderer::drawFrame() {
 
 void Renderer::loadShader() {
     std::vector<ShaderCreateInfo> shadersInfos;
-    shadersInfos.push_back({ L"Shaders/VertexShader.hlsl", VERTEX_SHADER });
-    shadersInfos.push_back({ L"Shaders/PixelShader.hlsl", PIXEL_SHADER });
+    shadersInfos.push_back({ L"Shaders/VertexShader.hlsl", VERTEX_SHADER, "Lab1 cube vertex shader"});
+    shadersInfos.push_back({ L"Shaders/PixelShader.hlsl", PIXEL_SHADER,  "Lab1 cube pixel shader" });
     shader = Shader::loadShader(device.getDevice(), shadersInfos.data(), shadersInfos.size());
     std::vector< ShaderVertexInput> vertexInputs;
     vertexInputs.push_back({ "POSITION", 0, sizeof(float) * 3, DXGI_FORMAT_R32G32B32_FLOAT });
@@ -83,8 +83,8 @@ void Renderer::loadCube() {
         12, 14, 13, 12, 15, 14,
         16, 18, 17, 16, 19, 18,
         20, 22, 21, 20, 23, 22 };
-    cubeVertex = shader->createVertexBuffer(device.getDevice(), sizeof(vertices), 7 * sizeof(float), vertices);
-    cubeIndex = shader->createIndexBuffer(device.getDevice(), indices, sizeof(indices) / sizeof(uint32_t));
+    cubeVertex = shader->createVertexBuffer(device.getDevice(), sizeof(vertices), 7 * sizeof(float), vertices, "Cube vertex buffer");
+    cubeIndex = shader->createIndexBuffer(device.getDevice(), indices, sizeof(indices) / sizeof(uint32_t), "Cube index buffer");
 }
 
 void Renderer::release() {
@@ -99,5 +99,5 @@ void Renderer::release() {
 void Renderer::loadConstants() {
     ZeroMemory(&shaderConstant, sizeof(ShaderConstant));
     shaderConstant.worldMatrix = DirectX::XMMatrixIdentity();
-    constantBuffer = new ConstantBuffer(device.getDevice(), &shaderConstant, sizeof(ShaderConstant));
+    constantBuffer = new ConstantBuffer(device.getDevice(), &shaderConstant, sizeof(ShaderConstant), "Camera and mesh transform matrices");
 }

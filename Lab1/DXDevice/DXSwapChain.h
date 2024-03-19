@@ -9,7 +9,7 @@ class DXSwapChain
 {
 	friend class DXDevice;
 private:
-	DXSwapChain(IDXGIFactory* factory, IDXGISwapChain* pSwapChain, ID3D11Device* device, HWND windowHandle, uint32_t width, uint32_t height);
+	DXSwapChain(IDXGIFactory* factory, IDXGISwapChain* pSwapChain, ID3D11Device* device, HWND windowHandle, uint32_t width, uint32_t height, const char* name = nullptr);
 private:
 	IDXGISwapChain* swapChain;
 	ID3D11Device* device;
@@ -18,6 +18,7 @@ private:
 	std::vector<ID3D11Texture2D*> swapChainTextures;
 	HWND windowHandle;
 	uint32_t curImageCounter = 0;
+	const char* name;
 public:
 	void resize(uint32_t width, uint32_t height);
 	void bind(ID3D11DeviceContext* context, uint32_t width, uint32_t height);

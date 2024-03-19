@@ -14,6 +14,7 @@
 /*build*
 /cmake-build-debug*
 /cmake-build-release*
+/.vs/Lab1/v16/ipch/AutoPCH
 # Prerequisites
 *.d
 

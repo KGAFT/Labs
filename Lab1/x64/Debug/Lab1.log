@@ -1,7 +1,12 @@
-﻿  DXDevice.cpp
-  Renderer.cpp
-C:\Users\kgaft\Documents\Labs\Lab1\Engine\Renderer.cpp(25,181): warning C4305: 'argument': truncation from 'double' to 'float'
-C:\Users\kgaft\Documents\Labs\Lab1\Engine\Renderer.cpp(41,93): warning C4267: 'argument': conversion from 'size_t' to 'uint32_t', possible loss of data
-C:\Users\kgaft\Documents\Labs\Lab1\Engine\Renderer.cpp(45,69): warning C4267: 'argument': conversion from 'size_t' to 'uint32_t', possible loss of data
-  Generating Code...
+﻿  Shader.cpp
+C:\Users\kgaft\Documents\Labs\Lab1\DXShader\Shader.cpp(33,21): warning C4553: '==': result of expression not used; did you intend '='?
+C:\Users\kgaft\Documents\Labs\Lab1\DXShader\Shader.cpp(50,169): warning C4267: 'argument': conversion from 'size_t' to 'UINT', possible loss of data
+C:\Users\kgaft\Documents\Labs\Lab1\DXShader\Shader.cpp(53,169): warning C4267: 'argument': conversion from 'size_t' to 'UINT', possible loss of data
+C:\Users\kgaft\Documents\Labs\Lab1\DXShader\Shader.cpp(70,42): warning C4267: '+=': conversion from 'size_t' to 'uint32_t', possible loss of data
+C:\Users\kgaft\Documents\Labs\Lab1\DXShader\Shader.cpp(81,33): warning C4267: '=': conversion from 'size_t' to 'UINT', possible loss of data
+C:\Users\kgaft\Documents\Labs\Lab1\DXShader\Shader.cpp(96,5): warning C4267: 'argument': conversion from 'size_t' to 'UINT', possible loss of data
+C:\Users\kgaft\Documents\Labs\Lab1\DXShader\Shader.cpp(104,99): warning C4267: 'argument': conversion from 'size_t' to 'UINT', possible loss of data
+C:\Users\kgaft\Documents\Labs\Lab1\DXShader\Shader.cpp(105,114): warning C4267: 'argument': conversion from 'size_t' to 'UINT', possible loss of data
+C:\Users\kgaft\Documents\Labs\Lab1\DXShader\Shader.cpp(108,83): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
+C:\Users\kgaft\Documents\Labs\Lab1\DXShader\Shader.cpp(124,100): warning C4267: 'argument': conversion from 'size_t' to 'UINT', possible loss of data
   Lab1.vcxproj -> C:\Users\kgaft\Documents\Labs\Lab1\x64\Debug\Lab1.exe

@@ -5,7 +5,7 @@
 class ConstantBuffer
 {
 public:
-	ConstantBuffer(ID3D11Device* device, void* initData, size_t initDataSize);
+	ConstantBuffer(ID3D11Device* device, void* initData, size_t initDataSize, const char* bufferName = nullptr);
 private:
 	ID3D11Buffer* buffer;
 public:

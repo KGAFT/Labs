@@ -5,21 +5,35 @@
 Shader* Shader::loadShader(ID3D11Device* device, ShaderCreateInfo* pCreateInfos, uint32_t shaderAmount) {
 	std::map<ShaderType, ID3DBlob*> shadersBinaries;
 	ID3DBlob* errorBlob = nullptr;
-	ID3DBlob* tempBlob;
+	ID3DBlob* tempBlob = nullptr;
+	uint32_t compileFlags = 0;
+	uint32_t vertexShaderIndex = 0;
+	uint32_t pixelShaderIndex = 0;
+	#if defined(_DEBUG)
+		compileFlags = D3DCOMPILE_DEBUG|D3DCOMPILE_SKIP_OPTIMIZATION;
+	#endif
 	for (uint32_t i = 0; i < shaderAmount; i++) {
-		D3DCompileFromFile(pCreateInfos[i].pathToShader, nullptr, nullptr, "main", pCreateInfos[i].shaderType==VERTEX_SHADER?"vs_5_0":"ps_5_0", NULL, NULL, &tempBlob,
-			&errorBlob);
-		if (errorBlob != nullptr) {
-			for (size_t i = 0; i < errorBlob->GetBufferSize(); i += sizeof(char)) {
-				std::cerr << *(((char*)errorBlob->GetBufferPointer()) + i);
+		if (FAILED(D3DCompileFromFile(pCreateInfos[i].pathToShader, nullptr, nullptr, "main", pCreateInfos[i].shaderType == VERTEX_SHADER ? "vs_5_0" : "ps_5_0", compileFlags, NULL, &tempBlob,
+			&errorBlob))) {
+			if (errorBlob != nullptr) {
+				for (size_t i = 0; i < errorBlob->GetBufferSize(); i += sizeof(char)) {
+					std::cerr << *(((char*)errorBlob->GetBufferPointer()) + i);
+				}
+				std::cerr << std::endl;
 			}
-			std::cerr << std::endl;
 			throw std::runtime_error("Failed to compile shader");
 		}
-		if (!tempBlob) {
+		if (tempBlob == nullptr) {
 			throw std::runtime_error("Failed to compile shader");
+		}
+		if (pCreateInfos[i].shaderType == VERTEX_SHADER) {
+			vertexShaderIndex = i;
+		}
+		else if (pCreateInfos[i].shaderType == PIXEL_SHADER) {
+			pixelShaderIndex == i;
 		}
 		shadersBinaries[pCreateInfos[i].shaderType] = tempBlob;
+		tempBlob = nullptr;
 	}
 	ID3D11VertexShader* vertexShader;
 	ID3D11PixelShader* pixelShader;
@@ -31,6 +45,14 @@ Shader* Shader::loadShader(ID3D11Device* device, ShaderCreateInfo* pCreateInfos,
 		&pixelShader))) {
 		throw std::runtime_error("Failed to make pixel shader");
 	}
+	#if defined(_DEBUG)
+		if (pCreateInfos[vertexShaderIndex].shaderName) {
+			vertexShader->SetPrivateData(WKPDID_D3DDebugObjectName, strlen(pCreateInfos[vertexShaderIndex].shaderName) * sizeof(char), pCreateInfos[vertexShaderIndex].shaderName);
+		}
+		if (pCreateInfos[pixelShaderIndex].shaderName) {
+			pixelShader->SetPrivateData(WKPDID_D3DDebugObjectName, strlen(pCreateInfos[pixelShaderIndex].shaderName) * sizeof(wchar_t), pCreateInfos[pixelShaderIndex].shaderName);
+		}
+	#endif
 	return new Shader(vertexShader, pixelShader, shadersBinaries[VERTEX_SHADER], shadersBinaries[PIXEL_SHADER]);
 }
 
@@ -50,7 +72,7 @@ void Shader::makeInputLayout(ShaderVertexInput* pInputs, uint32_t inputsAmount) 
 	}
 }
 
-VertexBuffer* Shader::createVertexBuffer(ID3D11Device* device, size_t dataSize, size_t stepSize, void* verticesList) {
+VertexBuffer* Shader::createVertexBuffer(ID3D11Device* device, size_t dataSize, size_t stepSize, void* verticesList, const char* bufferName) {
 	if (shaderInputs.empty()) {
 		throw std::runtime_error("Error: you must first populate shader input layout");
 	}
@@ -75,10 +97,18 @@ VertexBuffer* Shader::createVertexBuffer(ID3D11Device* device, size_t dataSize, 
 		vertexShaderData->GetBufferSize(), &bufferLayout))) {
 		throw std::runtime_error("Failed to create buffer layout");
 	}
+	#if defined(_DEBUG)
+		if (bufferName) {
+			std::string layoutName = bufferName;
+			layoutName += " layout";
+			buffer->SetPrivateData(WKPDID_D3DDebugObjectName, strlen(bufferName) * sizeof(char), bufferName);
+			bufferLayout->SetPrivateData(WKPDID_D3DDebugObjectName, layoutName.length() * sizeof(char), layoutName.c_str());
+		}
+	#endif
 	return new VertexBuffer(buffer, bufferLayout, device, vertexShaderData, stepSize);
 }
 
-IndexBuffer* Shader::createIndexBuffer(ID3D11Device* device, uint32_t* indices, uint32_t indicesCount) {
+IndexBuffer* Shader::createIndexBuffer(ID3D11Device* device, uint32_t* indices, uint32_t indicesCount, const char* bufferName) {
 	D3D11_BUFFER_DESC iBufferDesc;
 	memset(&iBufferDesc, 0, sizeof(iBufferDesc));
 	iBufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
@@ -89,9 +119,15 @@ IndexBuffer* Shader::createIndexBuffer(ID3D11Device* device, uint32_t* indices, 
 	indexData.pSysMem = indices;
 	ID3D11Buffer* buffer;
 	if (!FAILED(device->CreateBuffer(&iBufferDesc, &indexData, &buffer))) {
+		#if defined(_DEBUG)
+			if (bufferName) {
+				buffer->SetPrivateData(WKPDID_D3DDebugObjectName, strlen(bufferName) * sizeof(char), bufferName);
+			}
+		#endif
 		return new IndexBuffer(buffer, device, indicesCount);
 	}
 	throw std::runtime_error("Failed to create index buffer");
+	
 }
 
 void Shader::bind(ID3D11DeviceContext* deviceContext) {

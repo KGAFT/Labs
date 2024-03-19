@@ -1,4 +1,5 @@
 #include "DXRenderTargetView.h"
+#include <sstream>
 #include <stdexcept>
 
 D3D11_TEXTURE2D_DESC depthTextureDesc{800, 600, 1, 1,DXGI_FORMAT_D24_UNORM_S8_UINT, {1, 0}, D3D11_USAGE_DEFAULT, D3D11_BIND_DEPTH_STENCIL,0,0};
@@ -6,24 +7,24 @@ D3D11_TEXTURE2D_DESC colorTextureDesc{800, 600, 1, 1,DXGI_FORMAT_R32G32B32A32_FL
 D3D11_DEPTH_STENCIL_VIEW_DESC dsvDesc{ depthTextureDesc.Format, D3D11_DSV_DIMENSION_TEXTURE2DMS, 0, 0 };
 FLOAT toClear[4] = { 0,0,0,1 };
 
-DXRenderTargetView::DXRenderTargetView(ID3D11Device* device, uint32_t colorAttachmentCount, uint32_t width, uint32_t height) : device(device),
+DXRenderTargetView::DXRenderTargetView(ID3D11Device* device, uint32_t colorAttachmentCount, uint32_t width, uint32_t height, const char* name) : device(device),
 vp(D3D11_VIEWPORT{ (FLOAT)width, (FLOAT)height, 0.0, 1.0f }), depthCreatedInside(true), colorCreatedInside(true) {
     createColorAttachment(colorAttachmentCount, width, height);
     createDepthAttachment(width, height);
-    createRenderTarget();
-    createDepthStencilView();
+    createRenderTarget(name);
+    createDepthStencilView(name);
 }
-DXRenderTargetView::DXRenderTargetView(ID3D11Device* device, std::vector<ID3D11Texture2D*> colorAttachment, uint32_t width, uint32_t height) : device(device),
+DXRenderTargetView::DXRenderTargetView(ID3D11Device* device, std::vector<ID3D11Texture2D*> colorAttachment, uint32_t width, uint32_t height, const char* name) : device(device),
 colorAttachments(colorAttachment), vp(D3D11_VIEWPORT{(FLOAT)width, (FLOAT)height, 0.0, 1.0f}), depthCreatedInside(true) {
     createDepthAttachment(width, height);
-    createRenderTarget();
-    createDepthStencilView();
+    createRenderTarget(name);
+    createDepthStencilView(name);
 }
 
-DXRenderTargetView::DXRenderTargetView(ID3D11Device* device, std::vector <ID3D11Texture2D*> colorAttachment, ID3D11Texture2D* depthAttachment) : device(device),
+DXRenderTargetView::DXRenderTargetView(ID3D11Device* device, std::vector <ID3D11Texture2D*> colorAttachment, ID3D11Texture2D* depthAttachment, const char* name) : device(device),
 colorAttachments(colorAttachment), depthAttachment(depthAttachment), vp(D3D11_VIEWPORT{ 800.0f, 600.0f, 0.0, 1.0f }) {
-    createRenderTarget();
-    createDepthStencilView();
+    createRenderTarget(name);
+    createDepthStencilView(name);
 }
 
 void DXRenderTargetView::clearColorAttachments(ID3D11DeviceContext* context, float r, float g, float b, float a, int currentImage) {
@@ -60,33 +61,43 @@ void DXRenderTargetView::bind(ID3D11DeviceContext* context, uint32_t width, uint
 }
 
 
-void DXRenderTargetView::createRenderTarget() {
+void DXRenderTargetView::createRenderTarget(const char* name) {
     renderTargetViews.resize(colorAttachments.size());
+    std::stringstream nameStream;
     for (uint32_t i = 0; i < colorAttachments.size(); i++) {
         if (FAILED(device->CreateRenderTargetView(colorAttachments[i], nullptr, &renderTargetViews[i]))) {
             throw std::runtime_error("Failed to create render target view");
         }
+        #if defined(_DEBUG)
+            if (name) {
+                nameStream << name << " render target view " << i;
+                std::string finalName = nameStream.str();
+                nameStream.clear();
+                nameStream.str("");
+                colorAttachments[i]->SetPrivateData(WKPDID_D3DDebugObjectName, finalName.length() * sizeof(char), finalName.c_str());
+            }
+        #endif
     }
     
 }
 
-void DXRenderTargetView::resize(uint32_t width, uint32_t height) {
+void DXRenderTargetView::resize(uint32_t width, uint32_t height, const char* name) {
     createColorAttachment((uint32_t)colorAttachments.size(), width, height);
     createDepthAttachment(width, height);
-    createRenderTarget();
-    createDepthStencilView();
+    createRenderTarget(name);
+    createDepthStencilView(name);
 }
-void DXRenderTargetView::resize(std::vector <ID3D11Texture2D*> colorAttachment, uint32_t width, uint32_t height) {
+void DXRenderTargetView::resize(std::vector <ID3D11Texture2D*> colorAttachment, uint32_t width, uint32_t height, const char* name) {
     DXRenderTargetView::colorAttachments = colorAttachment;
     createDepthAttachment(width, height);
-    createRenderTarget();
-    createDepthStencilView();
+    createRenderTarget(name);
+    createDepthStencilView(name);
 }
-void DXRenderTargetView::resize(std::vector <ID3D11Texture2D*> colorAttachment, ID3D11Texture2D* depthAttachment, uint32_t width, uint32_t height) {
+void DXRenderTargetView::resize(std::vector <ID3D11Texture2D*> colorAttachment, ID3D11Texture2D* depthAttachment, uint32_t width, uint32_t height, const char* name) {
     DXRenderTargetView::colorAttachments = colorAttachment;
     DXRenderTargetView::depthAttachment = depthAttachment;
-    createRenderTarget();
-    createDepthStencilView();
+    createRenderTarget(name);
+    createDepthStencilView(name);
 }
 
 void DXRenderTargetView::createColorAttachment(uint32_t colorAttachmentCount, uint32_t width, uint32_t height) {
@@ -108,10 +119,17 @@ void DXRenderTargetView::createDepthAttachment(uint32_t width, uint32_t height) 
     }
 }
 
-void DXRenderTargetView::createDepthStencilView() {
+void DXRenderTargetView::createDepthStencilView(const char* name) {
     if (FAILED(device->CreateDepthStencilView(depthAttachment, &dsvDesc, &depthView))) {
         throw std::runtime_error("Failed to create depth stencil view");
     }
+    #if defined(_DEBUG)
+        if (name) {
+            std::string finalName = name;
+            finalName += " depth stencil view ";
+            depthAttachment->SetPrivateData(WKPDID_D3DDebugObjectName, finalName.length() * sizeof(char), finalName.c_str());
+        }
+    #endif
 }
 
 DXRenderTargetView::~DXRenderTargetView() {

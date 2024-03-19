@@ -7,9 +7,9 @@
 class DXRenderTargetView
 {
 public:
-	DXRenderTargetView(ID3D11Device* device, uint32_t colorAttachmentCount, uint32_t width, uint32_t height);
-	DXRenderTargetView(ID3D11Device* device, std::vector <ID3D11Texture2D*> colorAttachment, uint32_t width, uint32_t height);
-	DXRenderTargetView(ID3D11Device* device, std::vector <ID3D11Texture2D*> colorAttachment, ID3D11Texture2D* depthAttachment);
+	DXRenderTargetView(ID3D11Device* device, uint32_t colorAttachmentCount, uint32_t width, uint32_t height, const char* name = nullptr);
+	DXRenderTargetView(ID3D11Device* device, std::vector <ID3D11Texture2D*> colorAttachment, uint32_t width, uint32_t height, const char* name = nullptr);
+	DXRenderTargetView(ID3D11Device* device, std::vector <ID3D11Texture2D*> colorAttachment, ID3D11Texture2D* depthAttachment, const char* name = nullptr);
 private:
 	ID3D11Device* device = nullptr;
 	std::vector <ID3D11Texture2D*> colorAttachments;
@@ -24,14 +24,14 @@ public:
 	void bind(ID3D11DeviceContext* context, uint32_t width, uint32_t height, int curImage);
 	void clearColorAttachments(ID3D11DeviceContext* context, float r, float g, float b, float a, int currentImage);
 	void clearDepthAttachments(ID3D11DeviceContext* context);
-	void resize(uint32_t width, uint32_t height);
-	void resize(std::vector <ID3D11Texture2D*> colorAttachment, uint32_t width, uint32_t height);
-	void resize(std::vector <ID3D11Texture2D*> colorAttachment, ID3D11Texture2D* depthAttachment, uint32_t width, uint32_t height);
+	void resize(uint32_t width, uint32_t height, const char* name = nullptr);
+	void resize(std::vector <ID3D11Texture2D*> colorAttachment, uint32_t width, uint32_t height, const char* name = nullptr);
+	void resize(std::vector <ID3D11Texture2D*> colorAttachment, ID3D11Texture2D* depthAttachment, uint32_t width, uint32_t height, const char* name = nullptr);
 private:
 	void createColorAttachment(uint32_t colorAttachmentCount, uint32_t width, uint32_t height);
 	void createDepthAttachment(uint32_t width, uint32_t height);
-	void createRenderTarget();
-	void createDepthStencilView();
+	void createRenderTarget(const char* name = nullptr);
+	void createDepthStencilView(const char* name = nullptr);
 public:
 	~DXRenderTargetView();
 public:
