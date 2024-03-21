@@ -1,0 +1,6 @@
+C:\Users\kgaft\Documents\Labs\Lab1\x64\Debug\Shaders\PixelShader.hlsl
+C:\Users\kgaft\Documents\Labs\Lab1\x64\Debug\Shaders\VertexShader.hlsl
+C:\Users\kgaft\Documents\Labs\Lab1\x64\Debug\Lab1.exe
+C:\Users\kgaft\Documents\Labs\Lab2\x64\Debug\Shaders\PixelShader.hlsl
+C:\Users\kgaft\Documents\Labs\Lab2\x64\Debug\Shaders\VertexShader.hlsl
+C:\Users\kgaft\Documents\Labs\Lab2\x64\Debug\Lab2.exe
