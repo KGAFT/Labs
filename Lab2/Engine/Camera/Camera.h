@@ -1,52 +1,119 @@
 #pragma once
 
 #include <DirectXMath.h>
-
+#include "../../Window/WindowInputSystem.h"
 using namespace DirectX;
 
-class Camera
+class Camera : public IWindowKeyCallback, public IWindowMouseCallback
 {
 public:
     Camera() {
-        center = XMFLOAT3(0.0f, 0.0f, 0.0f);
+        focus = XMFLOAT3(0.0f, 0.0f, 0.0f);
         r = 5.0f;
-        theta = XM_PIDIV4;
-        phi = -XM_PIDIV4;
+        theta = -XM_PIDIV4;
+        phi = XM_PIDIV4;
+        keys.push_back({ 'w', true, KEY_DOWN });
+        keys.push_back({ 's', true, KEY_DOWN });
+        keys.push_back({ 'a', true, KEY_DOWN });
+        keys.push_back({ 'd', true, KEY_DOWN });
+        keys.push_back({ 'c', true, KEY_DOWN });
+        keys.push_back({ VK_SPACE, false, KEY_DOWN });
+
+        position = XMFLOAT3(focus.x - cosf(theta) * cosf(phi) * r,
+            focus.y - sinf(theta) * r,
+            focus.z - cosf(theta) * sinf(phi) * r);
+        updateViewMatrix();
+    }
+private:
+    XMMATRIX viewMatrix;
+    XMFLOAT3 focus;
+    XMFLOAT3 position;
+    float r;
+    float theta;
+    float phi;
+    std::vector<WindowKey> keys;
+    bool rotating = false;
+public:
+    void changePosition(float dx, float dy, float dz) {
+        focus = XMFLOAT3(focus.x + dx * cosf(phi) - dz * sinf(phi), focus.y + dy, focus.z + dx * sinf(phi) + dz * cosf(phi));
+        position = XMFLOAT3(position.x + dx * cosf(phi) - dz * sinf(phi), position.y + dy, position.z + dx * sinf(phi) + dz * cosf(phi));
+
+        updateViewMatrix();
+    }
+    void zoom(float dr) {
+        r += dr;
+        if (r < 1.0f) {
+            r = 1.0f;
+        }
+        position = XMFLOAT3(focus.x - cosf(theta) * cosf(phi) * r,
+            focus.y - sinf(theta) * r,
+            focus.z - cosf(theta) * sinf(phi) * r);
+
         updateViewMatrix();
     }
 
-    void changePosition(float dphi, float dtheta, float dr) {
+    void rotate(float dphi, float dtheta) {
         phi -= dphi;
-        theta += dtheta;
+        theta -= dtheta;
         theta = min(max(theta, -XM_PIDIV2), XM_PIDIV2);
-        r += dr;
-        if (r < 2.0f) {
-            r = 2.0f;
-        }
+        focus = XMFLOAT3(cosf(theta) * cosf(phi) * r + position.x,
+            sinf(theta) * r + position.y,
+            cosf(theta) * sinf(phi) * r + position.z);
+
         updateViewMatrix();
     }
 
     XMMATRIX& getViewMatrix() {
         return viewMatrix;
-    };
-private:
-    XMMATRIX viewMatrix;
-    XMFLOAT3 center;
-    float r;
-    float theta;
-    float phi;
+    }
 
+    void mouseMove(uint32_t x, uint32_t y) override {
+        if (rotating) {
+            rotate(x / 10000.0f, y / 10000.0f);
+        }
+    }
+    void mouseKey(uint32_t key) override {
+        rotating = key == WM_LBUTTONDOWN ? true : key == WM_LBUTTONUP ? false : rotating;
+    }
+
+    void keyEvent(WindowKey key) override {
+        float dx = 0,  dy = 0, dz = 0;
+        switch (key.key) {
+        case 'w':
+            dx = 1.0f;
+            break;
+        case 's':
+            dx = -1.0f;
+            break;
+        case 'a':
+            dz = 1.0f;
+            break;
+        case 'd':
+            dz = -1.0f;
+            break;
+        case 'c':
+            dy = -1.0f;
+            break;
+        case VK_SPACE:
+            dy = 1.0f;
+        default:
+            break;
+        }
+        changePosition(dx, dy, dz);
+    }
+    WindowKey* getKeys(uint32_t* pKeysAmountOut) override {
+        *pKeysAmountOut = keys.size();
+        return keys.data();
+    }
+
+private:
     void updateViewMatrix() {
-        XMFLOAT3 pos = XMFLOAT3(cosf(theta) * cosf(phi), sinf(theta), cosf(theta) * sinf(phi));
-        pos.x = pos.x * r + center.x;
-        pos.y = pos.y * r + center.y;
-        pos.z = pos.z * r + center.z;
         float upTheta = theta + XM_PIDIV2;
         XMFLOAT3 up = XMFLOAT3(cosf(upTheta) * cosf(phi), sinf(upTheta), cosf(upTheta) * sinf(phi));
 
         viewMatrix = DirectX::XMMatrixLookAtLH(
-            DirectX::XMVectorSet(pos.x, pos.y, pos.z, 0.0f),
-            DirectX::XMVectorSet(center.x, center.y, center.z, 0.0f),
+            DirectX::XMVectorSet(position.x, position.y, position.z, 0.0f),
+            DirectX::XMVectorSet(focus.x, focus.y, focus.z, 0.0f),
             DirectX::XMVectorSet(up.x, up.y, up.z, 0.0f)
         );
     }

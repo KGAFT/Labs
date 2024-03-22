@@ -3,6 +3,7 @@
 #include <Windows.h>
 #include <cstdint>
 #include <vector>
+#include "WindowInputSystem.h"
 
 class Window
 {
@@ -17,6 +18,7 @@ private:
 	uint32_t height;
 	const wchar_t* title;
 	bool needToClose = false;
+	WindowInputSystem inputSystem;
 	std::vector<void(*)(uint32_t, uint32_t)> resizeCallbacks;
 public:
 	void pollEvents();
@@ -25,7 +27,9 @@ public:
 	HWND getWindowHandle();
 	uint32_t getWidth();
 	uint32_t getHeight();
+	WindowInputSystem* getInputSystem();
 private:
 	void checkResizeCallbacks();
+	void checkEvent(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam);
 };
 

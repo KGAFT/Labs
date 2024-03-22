@@ -165,6 +165,7 @@
     <ClInclude Include="DXShader\Shader.h" />
     <ClInclude Include="DXShader\VertexBuffer.h" />
     <ClInclude Include="Engine\Renderer.h" />
+    <ClInclude Include="Window\WindowInputSystem.h" />
     <ClInclude Include="Window\Window.h" />
   </ItemGroup>
   <ItemGroup>

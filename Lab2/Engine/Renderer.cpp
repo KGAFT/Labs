@@ -11,6 +11,8 @@ void Renderer::resizeCallback(uint32_t width, uint32_t height) {
 Renderer::Renderer(Window* window) : engineWindow(window) {
 	swapChain = device.getSwapChain(window, "Lab 1 default swap chain");
     window->addResizeCallback(resizeCallback);
+    window->getInputSystem()->addKeyCallback(&camera);
+    window->getInputSystem()->addMouseCallback(&camera);
     loadShader();
     loadCube();
     loadConstants();

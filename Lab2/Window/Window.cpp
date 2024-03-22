@@ -32,6 +32,8 @@ LRESULT CALLBACK Window::WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpar
 
 
 		default:
+			window = (Window*)GetWindowLongPtr(hwnd, GWLP_USERDATA);
+			window->checkEvent(hwnd, msg, wparam, lparam);
 			return ::DefWindowProc(hwnd, msg, wparam, lparam);
 		}
 	}
@@ -109,8 +111,17 @@ uint32_t Window::getHeight() {
 	return height;
 }
 
+WindowInputSystem* Window::getInputSystem()
+{
+	return &inputSystem;
+}
+
 void Window::checkResizeCallbacks() {
 	for (auto& item : resizeCallbacks) {
 		item(width, height);
 	}
+}
+
+void Window::checkEvent(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
+	inputSystem.handlePollEvents(hwnd, msg, wparam, lparam);
 }

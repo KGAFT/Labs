@@ -1,27 +1,11 @@
 ﻿C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Microsoft\VC\v160\Microsoft.CppBuild.targets(513,5): warning MSB8028: The intermediate directory (x64\Debug\) contains files shared from another project (Lab1.vcxproj).  This can lead to incorrect clean and rebuild behavior.
-  ConstantBuffer.cpp
-C:\Users\kgaft\Documents\Labs\Lab2\DXShader\ConstantBuffer.cpp(26,99): warning C4267: 'argument': conversion from 'size_t' to 'UINT', possible loss of data
-  DXDevice.cpp
-  DXRenderTargetView.cpp
-C:\Users\kgaft\Documents\Labs\Lab2\DXDevice\DXRenderTargetView.cpp(77,132): warning C4267: 'argument': conversion from 'size_t' to 'UINT', possible loss of data
-C:\Users\kgaft\Documents\Labs\Lab2\DXDevice\DXRenderTargetView.cpp(130,124): warning C4267: 'argument': conversion from 'size_t' to 'UINT', possible loss of data
-  DXSwapChain.cpp
   Renderer.cpp
-C:\Users\kgaft\Documents\Labs\Lab2\Engine\Renderer.cpp(25,181): warning C4305: 'argument': truncation from 'double' to 'float'
-C:\Users\kgaft\Documents\Labs\Lab2\Engine\Renderer.cpp(41,93): warning C4267: 'argument': conversion from 'size_t' to 'uint32_t', possible loss of data
-C:\Users\kgaft\Documents\Labs\Lab2\Engine\Renderer.cpp(45,69): warning C4267: 'argument': conversion from 'size_t' to 'uint32_t', possible loss of data
+C:\Users\kgaft\Documents\Labs\Lab2\Engine\Camera\Camera.h(105,1): warning C4267: '=': conversion from 'size_t' to 'uint32_t', possible loss of data
+C:\Users\kgaft\Documents\Labs\Lab2\Engine\Renderer.cpp(27,181): warning C4305: 'argument': truncation from 'double' to 'float'
+C:\Users\kgaft\Documents\Labs\Lab2\Engine\Renderer.cpp(43,93): warning C4267: 'argument': conversion from 'size_t' to 'uint32_t', possible loss of data
+C:\Users\kgaft\Documents\Labs\Lab2\Engine\Renderer.cpp(47,69): warning C4267: 'argument': conversion from 'size_t' to 'uint32_t', possible loss of data
   Lab2.cpp
-  Shader.cpp
-C:\Users\kgaft\Documents\Labs\Lab2\DXShader\Shader.cpp(33,21): warning C4553: '==': result of expression not used; did you intend '='?
-C:\Users\kgaft\Documents\Labs\Lab2\DXShader\Shader.cpp(50,169): warning C4267: 'argument': conversion from 'size_t' to 'UINT', possible loss of data
-C:\Users\kgaft\Documents\Labs\Lab2\DXShader\Shader.cpp(53,169): warning C4267: 'argument': conversion from 'size_t' to 'UINT', possible loss of data
-C:\Users\kgaft\Documents\Labs\Lab2\DXShader\Shader.cpp(70,42): warning C4267: '+=': conversion from 'size_t' to 'uint32_t', possible loss of data
-C:\Users\kgaft\Documents\Labs\Lab2\DXShader\Shader.cpp(81,33): warning C4267: '=': conversion from 'size_t' to 'UINT', possible loss of data
-C:\Users\kgaft\Documents\Labs\Lab2\DXShader\Shader.cpp(96,5): warning C4267: 'argument': conversion from 'size_t' to 'UINT', possible loss of data
-C:\Users\kgaft\Documents\Labs\Lab2\DXShader\Shader.cpp(104,99): warning C4267: 'argument': conversion from 'size_t' to 'UINT', possible loss of data
-C:\Users\kgaft\Documents\Labs\Lab2\DXShader\Shader.cpp(105,114): warning C4267: 'argument': conversion from 'size_t' to 'UINT', possible loss of data
-C:\Users\kgaft\Documents\Labs\Lab2\DXShader\Shader.cpp(108,83): warning C4267: 'argument': conversion from 'size_t' to 'unsigned int', possible loss of data
-C:\Users\kgaft\Documents\Labs\Lab2\DXShader\Shader.cpp(124,100): warning C4267: 'argument': conversion from 'size_t' to 'UINT', possible loss of data
-  Window.cpp
+C:\Users\kgaft\Documents\Labs\Lab2\Engine\Camera\Camera.h(105,1): warning C4267: '=': conversion from 'size_t' to 'uint32_t', possible loss of data
+C:\Users\kgaft\Documents\Labs\Lab2\Lab2.cpp(23,1): warning C4267: '=': conversion from 'size_t' to 'uint32_t', possible loss of data
   Generating Code...
   Lab1.vcxproj -> C:\Users\kgaft\Documents\Labs\Lab2\x64\Debug\Lab2.exe
