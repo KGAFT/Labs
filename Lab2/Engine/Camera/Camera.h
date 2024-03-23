@@ -33,6 +33,8 @@ private:
     float phi;
     std::vector<WindowKey> keys;
     bool rotating = false;
+    float oldPosX = 0;
+    float oldPosY = 0;
 public:
     void changePosition(float dx, float dy, float dz) {
         focus = XMFLOAT3(focus.x + dx * cosf(phi) - dz * sinf(phi), focus.y + dy, focus.z + dx * sinf(phi) + dz * cosf(phi));
@@ -50,6 +52,9 @@ public:
             focus.z - cosf(theta) * sinf(phi) * r);
 
         updateViewMatrix();
+    }
+    XMFLOAT3 getPosition() {
+        return position;
     }
 
     void rotate(float dphi, float dtheta) {
@@ -69,33 +74,36 @@ public:
 
     void mouseMove(uint32_t x, uint32_t y) override {
         if (rotating) {
-            rotate(x / 10000.0f, y / 10000.0f);
+            rotate((x-oldPosX)/100, (y-oldPosY)/100);
         }
+        oldPosX = x;
+        oldPosY = y;
     }
     void mouseKey(uint32_t key) override {
         rotating = key == WM_LBUTTONDOWN ? true : key == WM_LBUTTONUP ? false : rotating;
     }
 
     void keyEvent(WindowKey key) override {
+        float sens = 0.11f;
         float dx = 0,  dy = 0, dz = 0;
         switch (key.key) {
         case 'w':
-            dx = 1.0f;
+            dx = sens;
             break;
         case 's':
-            dx = -1.0f;
+            dx = -1*sens;
             break;
         case 'a':
-            dz = 1.0f;
+            dz = sens;
             break;
         case 'd':
-            dz = -1.0f;
+            dz = -1*sens;
             break;
         case 'c':
-            dy = -1.0f;
+            dy = -1*sens;
             break;
         case VK_SPACE:
-            dy = 1.0f;
+            dy = sens;
         default:
             break;
         }

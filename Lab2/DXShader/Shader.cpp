@@ -1,6 +1,7 @@
 #include "Shader.h"
 #include <map>
 #include <iostream>
+#include "D3DInclude.h"
 
 Shader* Shader::loadShader(ID3D11Device* device, ShaderCreateInfo* pCreateInfos, uint32_t shaderAmount) {
 	std::map<ShaderType, ID3DBlob*> shadersBinaries;
@@ -12,8 +13,9 @@ Shader* Shader::loadShader(ID3D11Device* device, ShaderCreateInfo* pCreateInfos,
 	#if defined(_DEBUG)
 		compileFlags = D3DCOMPILE_DEBUG|D3DCOMPILE_SKIP_OPTIMIZATION;
 	#endif
+	D3DInclude includeObj;
 	for (uint32_t i = 0; i < shaderAmount; i++) {
-		if (FAILED(D3DCompileFromFile(pCreateInfos[i].pathToShader, nullptr, nullptr, "main", pCreateInfos[i].shaderType == VERTEX_SHADER ? "vs_5_0" : "ps_5_0", compileFlags, NULL, &tempBlob,
+		if (FAILED(D3DCompileFromFile(pCreateInfos[i].pathToShader, nullptr, &includeObj, "main", pCreateInfos[i].shaderType == VERTEX_SHADER ? "vs_5_0" : "ps_5_0", compileFlags, NULL, &tempBlob,
 			&errorBlob))) {
 			if (errorBlob != nullptr) {
 				for (size_t i = 0; i < errorBlob->GetBufferSize(); i += sizeof(char)) {

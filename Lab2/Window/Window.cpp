@@ -76,6 +76,7 @@ Window* Window::createWindow(uint32_t width, uint32_t height, const wchar_t* win
 	result->title = windowTitle;
 	ShowWindow(windowHandle, SW_SHOW);
 	UpdateWindow(windowHandle);
+	result->windowReady = true;
 	return result;
 }
 
@@ -123,5 +124,8 @@ void Window::checkResizeCallbacks() {
 }
 
 void Window::checkEvent(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
-	inputSystem.handlePollEvents(hwnd, msg, wparam, lparam);
+	if (this && windowReady) {
+		inputSystem.handlePollEvents(hwnd, msg, wparam, lparam);
+	}
+	
 }

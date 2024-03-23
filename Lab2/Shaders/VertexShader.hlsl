@@ -2,13 +2,15 @@
 struct VS_INPUT
 {
     float3 position: POSITION;
-    float4 color: COLOR;
+    float2 uv: UV;
+    float3 normal: NORMAL;
 };
 
 struct VS_OUTPUT
 {
     float4 position: SV_POSITION;
-    float4 color: COLOR;
+    float3 normal: NORMAL;
+    float2 uv: UV;
 };
 
 cbuffer TransformData: register(b0)
@@ -22,6 +24,7 @@ VS_OUTPUT main(VS_INPUT vsInput)
 {
     VS_OUTPUT output = (VS_OUTPUT)0;
     output.position = mul(cameraMatrix, mul(worldMatrix, float4(vsInput.position, 1.0f)));
-    output.color = vsInput.color;
+    output.uv = vsInput.uv;
+    output.normal = vsInput.normal;
     return output;
 }

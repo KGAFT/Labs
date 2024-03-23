@@ -20,6 +20,7 @@ private:
 	bool needToClose = false;
 	WindowInputSystem inputSystem;
 	std::vector<void(*)(uint32_t, uint32_t)> resizeCallbacks;
+	bool windowReady = false;
 public:
 	void pollEvents();
 	void addResizeCallback(void(*resizeCallback)(uint32_t, uint32_t));

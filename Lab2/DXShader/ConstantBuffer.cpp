@@ -3,13 +3,13 @@
 
 ConstantBuffer::ConstantBuffer(ID3D11Device* device, void* initData, size_t initDataSize, const char* bufferName)
 {
-   // size_t cBufferSize;
-   // for (cBufferSize = initDataSize; cBufferSize % 16 != 0; cBufferSize++);
+    size_t cBufferSize;
+    for (cBufferSize = initDataSize; cBufferSize % 16 != 0; cBufferSize++);
 
 
 	D3D11_BUFFER_DESC bufferDesc = {};
 	bufferDesc.Usage = D3D11_USAGE_DEFAULT;
-	bufferDesc.ByteWidth = (UINT)initDataSize;
+	bufferDesc.ByteWidth = (UINT)cBufferSize;
 	bufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
 	bufferDesc.CPUAccessFlags = 0;
 	bufferDesc.MiscFlags = 0;

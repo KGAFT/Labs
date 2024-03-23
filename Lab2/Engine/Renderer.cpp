@@ -16,21 +16,29 @@ Renderer::Renderer(Window* window) : engineWindow(window) {
     loadShader();
     loadCube();
     loadConstants();
+    window->getInputSystem()->addKeyCallback(this);
+    keys.push_back({ VK_SPACE, false, KEY_DOWN });
+    keys.push_back({ VK_F1, false, KEY_DOWN });
+    keys.push_back({ VK_F2, false, KEY_DOWN });
+    keys.push_back({ VK_F3, false, KEY_DOWN });
+
 }
 
 void Renderer::drawFrame() {
-    swapChain->clearRenderTargets(device.getDeviceContext(), 0.1f, 0.2f, 0.5f, 1.0f);
+    swapChain->clearRenderTargets(device.getDeviceContext(), 0,0,0, 1.0f);
     swapChain->bind(device.getDeviceContext(), engineWindow->getWidth(), engineWindow->getHeight());
 
     shaderConstant.cameraMatrix = camera.getViewMatrix();
 
     DirectX::XMMATRIX mProjection = DirectX::XMMatrixPerspectiveFovLH(DirectX::XMConvertToRadians(90), (float)engineWindow->getWidth() / (float)engineWindow->getHeight(), 0.001, 20);
     shaderConstant.cameraMatrix = XMMatrixMultiply(shaderConstant.cameraMatrix, mProjection);
+    lightConstantData.cameraPosition = camera.getPosition();
+    lightConstant->updateData(device.getDeviceContext(), &lightConstantData);
 
     constantBuffer->updateData(device.getDeviceContext(), &shaderConstant);
     shader->bind(device.getDeviceContext());
     constantBuffer->bindToVertexShader(device.getDeviceContext());
-
+    lightConstant->bindToPixelShader(device.getDeviceContext());
     shader->draw(device.getDeviceContext(), cubeIndex, cubeVertex);
 
     swapChain->present(true);
@@ -43,49 +51,54 @@ void Renderer::loadShader() {
     shader = Shader::loadShader(device.getDevice(), shadersInfos.data(), shadersInfos.size());
     std::vector< ShaderVertexInput> vertexInputs;
     vertexInputs.push_back({ "POSITION", 0, sizeof(float) * 3, DXGI_FORMAT_R32G32B32_FLOAT });
-    vertexInputs.push_back({ "COLOR", 0, sizeof(float) * 4, DXGI_FORMAT_R32G32B32A32_FLOAT });
+    vertexInputs.push_back({ "UV", 0, sizeof(float) * 2, DXGI_FORMAT_R32G32_FLOAT });
+    vertexInputs.push_back({ "NORMAL", 0, sizeof(float) * 3, DXGI_FORMAT_R32G32B32_FLOAT });
+
     shader->makeInputLayout(vertexInputs.data(), vertexInputs.size());
 }
 
 void Renderer::loadCube() {
-    float vertices[]{
-         -1.0, -1.0,  1.0,      0.5f, 0.2f, 0.1f, 1.0f,
-         1.0, -1.0,  1.0,       0.2f, 0.5f, 0.1f, 1.0f,
-         1.0, -1.0, -1.0,       0.1f, 0.2f, 0.5f, 1.0f,
-        -1.0, -1.0, -1.0,       0.5f, 0.1f, 0.2f, 1.0f,
+    float vertices[] = {
+       -2.0, -2.0,  2.0, 0,1, 0,-1,0,
+        2.0, -2.0,  2.0, 1,1, 0,-1,0,
+        2.0, -2.0, -2.0, 1,0, 0,-1,0,
+       -2.0, -2.0, -2.0, 0,0, 0,-1,0,
 
-        -1.0,  1.0, -1.0,      0.25f, 0.8f, 0.1f, 1.0f,
-         1.0,  1.0, -1.0,      0.8f, 0.25f, 0.1f, 1.0f,
-         1.0,  1.0,  1.0,      0.25f, 0.1f, 0.8f, 1.0f,
-        -1.0,  1.0,  1.0,      0.1f, 0.8f, 0.25f, 1.0f,
+       -2.0,  2.0, -2.0, 0,1, 0,1,0,
+        2.0,  2.0, -2.0, 1,1, 0,1,0,
+        2.0,  2.0,  2.0, 1,0, 0,1,0,
+       -2.0,  2.0,  2.0, 0,0, 0,1,0,
 
-         1.0, -1.0, -1.0,      0.9f, 0.1f, 0.2f, 1.0f,
-         1.0, -1.0,  1.0,      0.1f, 0.9f, 0.2f, 1.0f,
-         1.0,  1.0,  1.0,      0.9f, 0.2f, 0.1f, 1.0f,
-         1.0,  1.0, -1.0,      0.2f, 0.1f, 0.9f, 1.0f,
+        2.0, -2.0, -2.0, 0,1, 1,0,0,
+        2.0, -2.0,  2.0, 1,1, 1,0,0,
+        2.0,  2.0,  2.0, 1,0, 1,0,0,
+        2.0,  2.0, -2.0, 0,0, 1,0,0,
 
-        -1.0, -1.0,  1.0,      0.7f, 0.3f, 0.5f, 1.0f,
-        -1.0, -1.0, -1.0,      0.3f, 0.7f, 0.5f, 1.0f,
-        -1.0,  1.0, -1.0,      0.7f, 0.5f, 0.3f, 1.0f,
-        -1.0,  1.0,  1.0,      0.5f, 0.3f, 0.5f, 1.0f,
+       -2.0, -2.0,  2.0, 0,1, -1,0,0,
+       -2.0, -2.0, -2.0, 1,1, -1,0,0,
+       -2.0,  2.0, -2.0, 1,0, -1,0,0,
+       -2.0,  2.0,  2.0, 0,0, -1,0,0,
 
-         1.0, -1.0,  1.0,     0.12f, 0.23f, 0.4f, 1.0f,
-        -1.0, -1.0,  1.0,     0.23f, 0.12f, 0.4f, 1.0f,
-        -1.0,  1.0,  1.0,     0.4f, 0.23f, 0.12f, 1.0f,
-         1.0,  1.0,  1.0,     0.12f, 0.4f, 0.23f, 1.0f,
+        2.0, -2.0,  2.0, 0,1, 0,0,1,
+       -2.0, -2.0,  2.0, 1,1, 0,0,1,
+       -2.0,  2.0,  2.0, 1,0, 0,0,1,
+        2.0,  2.0,  2.0, 0,0, 0,0,1,
 
-        -1.0, -1.0, -1.0,     0.25f, 0.1f, 0.15f, 1.0f,
-         1.0, -1.0, -1.0,     0.1f, 0.25f, 0.15f, 1.0f,
-         1.0,  1.0, -1.0,     0.25f, 0.15f, 0.1f, 1.0f,
-        -1.0,  1.0, -1.0,     0.15f, 0.1f, 0.1f, 1.0f
+       -2.0, -2.0, -2.0, 0,1, 0,0,-1,
+        2.0, -2.0, -2.0, 1,1, 0,0,-1,
+        2.0,  2.0, -2.0, 1,0, 0,0,-1,
+       -2.0,  2.0, -2.0, 0,0, 0,0,-1
     };
-    uint32_t indices[]{ 0, 2, 1, 0, 3, 2,
+    uint32_t indices[] = {
+        0, 2, 1, 0, 3, 2,
         4, 6, 5, 4, 7, 6,
         8, 10, 9, 8, 11, 10,
         12, 14, 13, 12, 15, 14,
         16, 18, 17, 16, 19, 18,
-        20, 22, 21, 20, 23, 22 };
-    cubeVertex = shader->createVertexBuffer(device.getDevice(), sizeof(vertices), 7 * sizeof(float), vertices, "Cube vertex buffer");
+        20, 22, 21, 20, 23, 22
+    };
+    
+    cubeVertex = shader->createVertexBuffer(device.getDevice(), sizeof(vertices), 8 * sizeof(float), vertices, "Cube vertex buffer");
     cubeIndex = shader->createIndexBuffer(device.getDevice(), indices, sizeof(indices) / sizeof(uint32_t), "Cube index buffer");
 }
 
@@ -97,9 +110,31 @@ void Renderer::release() {
     delete swapChain;
 }
 
+void Renderer::keyEvent(WindowKey key)
+{
+    uint32_t index = key.key - VK_F1;
+    lightConstantData.sources[index].intensity *= 10;
+    if (lightConstantData.sources[index].intensity > 100) {
+        lightConstantData.sources[index].intensity = 1;
+    }
+}
+
+WindowKey* Renderer::getKeys(uint32_t* pKeysAmountOut)
+{
+    *pKeysAmountOut = keys.size();
+    return keys.data();
+}
+
 
 void Renderer::loadConstants() {
     ZeroMemory(&shaderConstant, sizeof(ShaderConstant));
     shaderConstant.worldMatrix = DirectX::XMMatrixIdentity();
     constantBuffer = new ConstantBuffer(device.getDevice(), &shaderConstant, sizeof(ShaderConstant), "Camera and mesh transform matrices");
+
+    lightConstantData.sources[0].position = XMFLOAT3(0,5,0);
+    lightConstantData.sources[1].position = XMFLOAT3(5,0,0);
+    lightConstantData.sources[2].position = XMFLOAT3(0,-5,-5);
+
+    lightConstant = new ConstantBuffer(device.getDevice(), &lightConstantData, sizeof(lightConstantData), "Light sources infos");
+
 }

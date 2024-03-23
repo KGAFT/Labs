@@ -39,6 +39,12 @@
     <ClCompile Include="Engine\Renderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Texture.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DXShader\D3DInclude.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Window\Window.h">
@@ -74,9 +80,22 @@
     <ClInclude Include="Window\WindowInputSystem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Texture.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DXShader\D3DInclude.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="Shaders\VertexShader.hlsl" />
     <Text Include="Shaders\PixelShader.hlsl" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Shaders\BaseHDR.hlsli" />
+  </ItemGroup>
+  <ItemGroup>
+    <FxCompile Include="Shaders\ToneMapVS.hlsl" />
+    <FxCompile Include="Shaders\ToneMapPS.hlsl" />
   </ItemGroup>
 </Project>

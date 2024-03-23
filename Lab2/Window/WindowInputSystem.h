@@ -16,6 +16,7 @@ struct WindowKey {
 	WindowKeyAction action;
 };
 
+
 class IWindowKeyCallback {
 public:
 	virtual void keyEvent(WindowKey key) = 0;
