@@ -152,9 +152,9 @@
     <ClCompile Include="DXDevice\DXRenderTargetView.cpp" />
     <ClCompile Include="DXDevice\DXSwapChain.cpp" />
     <ClCompile Include="Engine\Renderer.cpp" />
+    <ClCompile Include="Engine\ToneMapper.cpp" />
     <ClCompile Include="Lab2.cpp" />
     <ClCompile Include="DXShader\Shader.cpp" />
-    <ClCompile Include="Texture.cpp" />
     <ClCompile Include="Window\Window.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -168,7 +168,7 @@
     <ClInclude Include="DXShader\Shader.h" />
     <ClInclude Include="DXShader\VertexBuffer.h" />
     <ClInclude Include="Engine\Renderer.h" />
-    <ClInclude Include="Texture.h" />
+    <ClInclude Include="Engine\ToneMapper.h" />
     <ClInclude Include="Window\WindowInputSystem.h" />
     <ClInclude Include="Window\Window.h" />
   </ItemGroup>

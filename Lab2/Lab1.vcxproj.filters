@@ -39,7 +39,7 @@
     <ClCompile Include="Engine\Renderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Texture.cpp">
+    <ClCompile Include="DXDevice\Texture.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="DXShader\D3DInclude.cpp">
@@ -80,7 +80,7 @@
     <ClInclude Include="Window\WindowInputSystem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Texture.h">
+    <ClInclude Include="DXDevice\Texture.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="DXShader\D3DInclude.h">
