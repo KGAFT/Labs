@@ -3,6 +3,7 @@
 #include <d3d11.h>
 #include <DirectXMath.h>
 #include <vector>
+#include <d3dcompiler.h>
 
 struct Texture
 {
@@ -45,6 +46,125 @@ private:
     ID3D11PixelShader* m_toneMapPS;
     std::vector<ScaledFrame> m_scaledFrames;
 private:
+HRESULT шnit(ID3D11Device* device, int textureWidth, int textureHeight)
+{
+	HRESULT result = createTextures(device, textureWidth, textureHeight);
+
+	if (SUCCEEDED(result))
+	{
+		D3D11_SAMPLER_DESC desc = {};
+		desc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+		
+		desc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+		desc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+		desc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+		desc.MinLOD = -FLT_MAX;
+		desc.MaxLOD = FLT_MAX;
+		desc.MipLODBias = 0.0f;
+		desc.MaxAnisotropy = 16;
+		desc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+		desc.BorderColor[0] = desc.BorderColor[1] = desc.BorderColor[2] = desc.BorderColor[3] = 1.0f;
+		result = device->CreateSamplerState(&desc, &m_sampler_avg);
+	}
+
+	if (SUCCEEDED(result))
+	{
+		D3D11_SAMPLER_DESC desc = {};
+		desc.Filter = D3D11_FILTER_MINIMUM_ANISOTROPIC;
+
+		desc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+		desc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+		desc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+		desc.MinLOD = -FLT_MAX;
+		desc.MaxLOD = FLT_MAX;
+		desc.MipLODBias = 0.0f;
+		desc.MaxAnisotropy = 16;
+		desc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+		desc.BorderColor[0] = desc.BorderColor[1] = desc.BorderColor[2] = desc.BorderColor[3] = 1.0f;
+		result = device->CreateSamplerState(&desc, &m_sampler_min);
+	}
+
+	if (SUCCEEDED(result))
+	{
+		D3D11_SAMPLER_DESC desc = {};
+		desc.Filter = D3D11_FILTER_MAXIMUM_ANISOTROPIC;
+
+		desc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+		desc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+		desc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+		desc.MinLOD = -FLT_MAX;
+		desc.MaxLOD = FLT_MAX;
+		desc.MipLODBias = 0.0f;
+		desc.MaxAnisotropy = 16;
+		desc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+		desc.BorderColor[0] = desc.BorderColor[1] = desc.BorderColor[2] = desc.BorderColor[3] = 1.0f;
+		result = device->CreateSamplerState(&desc, &m_sampler_max);
+	}
+
+	if (SUCCEEDED(result)) {
+		D3D11_BUFFER_DESC desc = {};
+		desc.ByteWidth = sizeof(AdaptBuffer);
+		desc.Usage = D3D11_USAGE_DEFAULT;
+		desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+		desc.CPUAccessFlags = 0;
+		desc.MiscFlags = 0;
+		desc.StructureByteStride = 0;
+
+		AdaptBuffer adaptBuffer;
+		adaptBuffer.adapt = DirectX::XMFLOAT4(0.0f, 0.5f, 0.0f, 0.0f);
+
+		D3D11_SUBRESOURCE_DATA data;
+		data.pSysMem = &adaptBuffer;
+		data.SysMemPitch = sizeof(adaptBuffer);
+		data.SysMemSlicePitch = 0;
+
+		result = device->CreateBuffer(&desc, &data, &m_adaptBuffer);
+	}
+
+	ID3D10Blob* vertexShaderBuffer = nullptr;
+	ID3D10Blob* pixelShaderBuffer = nullptr;
+	int flags = 0;
+#ifdef _DEBUG 
+	flags = D3DCOMPILE_DEBUG | D3DCOMPILE_SKIP_OPTIMIZATION;
+#endif
+
+	if (SUCCEEDED(result)) {
+		result = D3DCompileFromFile(L"brightnessPS.hlsl", NULL, NULL, "main", "ps_5_0", flags, 0, &pixelShaderBuffer, NULL);
+		if (SUCCEEDED(result)) {
+			result = device->CreatePixelShader(pixelShaderBuffer->GetBufferPointer(), pixelShaderBuffer->GetBufferSize(), NULL, &m_brightnessPS);
+		}
+	}
+
+	pixelShaderBuffer->Release();
+
+	if (SUCCEEDED(result)) {
+		result = D3DCompileFromFile(L"mappingVS.hlsl", NULL, NULL, "main", "vs_5_0", flags, 0, &vertexShaderBuffer, NULL);
+		if (SUCCEEDED(result)) {
+			result = device->CreateVertexShader(vertexShaderBuffer->GetBufferPointer(), vertexShaderBuffer->GetBufferSize(), NULL, &m_mappingVS);
+		}
+	}
+	if (SUCCEEDED(result)) {
+		result = D3DCompileFromFile(L"downsamplePS.hlsl", NULL, NULL, "main", "ps_5_0", flags, 0, &pixelShaderBuffer, NULL);
+		if (SUCCEEDED(result)) {
+			result = device->CreatePixelShader(pixelShaderBuffer->GetBufferPointer(), pixelShaderBuffer->GetBufferSize(), NULL, &m_downsamplePS);
+		}
+	}
+
+	vertexShaderBuffer->Release();
+	pixelShaderBuffer->Release();
+
+	if (SUCCEEDED(result)) {
+		result = D3DCompileFromFile(L"toneMapPS.hlsl", NULL, NULL, "main", "ps_5_0", flags, 0, &pixelShaderBuffer, NULL);
+		if (SUCCEEDED(result)) {
+			result = device->CreatePixelShader(pixelShaderBuffer->GetBufferPointer(), pixelShaderBuffer->GetBufferSize(), NULL, &m_toneMapPS);
+		}
+	}
+
+	pixelShaderBuffer->Release();
+
+	return result;
+}
+    
     HRESULT createTextures(ID3D11Device* device, int textureWidth, int textureHeight)
     {
         HRESULT result;

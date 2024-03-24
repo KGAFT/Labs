@@ -10,6 +10,10 @@ struct PS_INPUT {
     float2 uv : TEXCOORD;
 };
 
+struct PS_OUTPUT
+{
+    float4 color : SV_Target0;
+};
 
 cbuffer adaptBuffer : register (b0) {
     float4 adapt;
@@ -22,21 +26,23 @@ static const float D = 0.20f;
 static const float E = 0.02f;
 static const float F = 0.30f;
 static const float W = 11.2f;
-float3 uncharted2Tonemap(float3 x) {
+float3 Uncharted2Tonemap(float3 x) {
     return ((x * (A * x + C * B) + D * E) / (x * (A * x + B) + D * F)) - E / F;
 }
 
-float3 tonemapFilmic(float3 color, float adaptedAvg) {
+float3 TonemapFilmic(float3 color, float adaptedAvg) {
     float avg = exp(adaptedAvg) - 1.0f;
     float keyValue = 1.03f - 2.0f / (2.0f + log(avg + 1.0f));
 
     float E = keyValue / clamp(avg, minTexture.Sample(colorSampler, float2(0.5f, 0.5f)).x, maxTexture.Sample(colorSampler, float2(0.5f, 0.5f)).x);
-    float3 curr = uncharted2Tonemap(E * color);
-    float3 whiteScale = 1.0f / uncharted2Tonemap(W);
+    float3 curr = Uncharted2Tonemap(E * color);
+    float3 whiteScale = 1.0f / Uncharted2Tonemap(W);
     return curr * whiteScale;
 }
 
-float4 main() : SV_TARGET
-{
-	return  float4(tonemapFilmic(colorTexture.Sample(colorSampler, input.uv).xyz, adapt.x), 1.0f);;
+PS_OUTPUT main(PS_INPUT input) : SV_TARGET{
+    PS_OUTPUT output;
+
+    output.color = float4(TonemapFilmic(colorTexture.Sample(colorSampler, input.uv).xyz, adapt.x), 1.0f);
+    return output;
 }
