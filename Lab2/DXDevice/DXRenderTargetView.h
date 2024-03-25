@@ -29,6 +29,7 @@ public:
 	void resize(std::vector <ID3D11Texture2D*> colorAttachment, uint32_t width, uint32_t height, const char* name = nullptr);
 	void resize(std::vector <ID3D11Texture2D*> colorAttachment, ID3D11Texture2D* depthAttachment, uint32_t width, uint32_t height, const char* name = nullptr);
 	std::vector<ID3D11RenderTargetView*> getRenderTargetViews() const;
+	std::vector<ID3D11ShaderResourceView*> getResourceViews() const;
 
 private:
 	void createColorAttachment(uint32_t colorAttachmentCount, uint32_t width, uint32_t height);

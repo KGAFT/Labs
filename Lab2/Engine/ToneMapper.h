@@ -1,5 +1,6 @@
 ﻿#pragma once
 
+#include <chrono>
 #include <d3d11.h>
 #include <DirectXMath.h>
 #include <vector>
@@ -45,6 +46,9 @@ private:
     ID3D11PixelShader* brightnessPS;
     ID3D11PixelShader* downsamplePS;
     ID3D11PixelShader* tonemapPS;
+    std::chrono::time_point<std::chrono::steady_clock> lastFrameTime;
+    ID3D11Texture2D* readAvgTexture;
+    float adapt = 0;
 public:
 
     void initialize(ID3D11Device* device, uint32_t width, uint32_t height)
@@ -165,6 +169,99 @@ public:
             throw std::runtime_error("Failed to initialize shaders");
         }
     }
+
+    void renderBrightness(ID3D11DeviceContext* deviceContext)
+    {
+        for (int i = scaledTexturesAmount; i >= 0; i--)
+        {
+            if (i == scaledTexturesAmount)
+            {
+                ID3D11RenderTargetView* views[] = { scaledFrames[i].avg.renderTargetView, 
+                    scaledFrames[i].min.renderTargetView, 
+                    scaledFrames[i].max.renderTargetView
+                };
+                deviceContext->OMSetRenderTargets(3, views, nullptr);
+            }
+            else
+            {
+                ID3D11RenderTargetView* views[] = { scaledFrames[i].avg.renderTargetView, scaledFrames[i].min.renderTargetView, scaledFrames[i].max.renderTargetView };
+                deviceContext->OMSetRenderTargets(3, views, nullptr);
+            }
+		
+            ID3D11SamplerState* samplers[] = { samplerAvg, samplerMin, samplerMax };
+            deviceContext->PSSetSamplers(0, 3, samplers);
+
+            D3D11_VIEWPORT viewport;
+            viewport.TopLeftX = 0;
+            viewport.TopLeftY = 0;
+            viewport.Width = (FLOAT)pow(2, i);
+            viewport.Height = (FLOAT)pow(2, i);
+            viewport.MinDepth = 0.0f;
+            viewport.MaxDepth = 1.0f;
+            deviceContext->RSSetViewports(1, &viewport);
+
+            ID3D11ShaderResourceView* resources[] = { i == scaledTexturesAmount ? rtv->getResourceViews()[0] : scaledFrames[i + 1].avg.shaderResourceView,
+                i == scaledTexturesAmount ? rtv->getResourceViews()[0] : scaledFrames[i + 1].min.shaderResourceView,
+                i == scaledTexturesAmount ? rtv->getResourceViews()[0] : scaledFrames[i + 1].max.shaderResourceView 
+            };
+            deviceContext->PSSetShaderResources(0, 3, resources);
+            deviceContext->OMSetDepthStencilState(nullptr, 0);
+            deviceContext->RSSetState(nullptr);
+            deviceContext->OMSetBlendState(nullptr, nullptr, 0xFFFFFFFF);
+            deviceContext->IASetInputLayout(nullptr);
+            deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+            deviceContext->VSSetShader(mappingVS, nullptr, 0);
+            deviceContext->PSSetShader(i == scaledTexturesAmount ? brightnessPS : downsamplePS, nullptr, 0);
+            deviceContext->Draw(6, 0);
+        }
+    }
+    void RenderTonemap(ID3D11DeviceContext* deviceContext)
+    {
+        auto time = std::chrono::high_resolution_clock::now();
+        float dtime = std::chrono::duration<float, std::milli>(time - lastFrameTime).count() * 0.001;
+        lastFrameTime = time;
+
+        deviceContext->CopyResource(readAvgTexture, scaledFrames[0].avg.texture);
+        D3D11_MAPPED_SUBRESOURCE ResourceDesc = {};
+        HRESULT hr = deviceContext->Map(readAvgTexture, 0, D3D11_MAP_READ, 0, &ResourceDesc);
+
+        float avg;
+        if (ResourceDesc.pData)
+        {
+            float* pData = reinterpret_cast<float*>(ResourceDesc.pData);
+            avg = pData[0];
+        }
+        deviceContext->Unmap(readAvgTexture, 0);
+
+        adapt += (avg - adapt) * (1.0f - exp(-dtime / s));
+
+        
+        adaptData.adapt = DirectX::XMFLOAT4(adapt, 0.0f, 0.0f, 0.0f);
+
+        constantBuffer->updateData(deviceContext, &adaptData);
+
+        ID3D11ShaderResourceView* resources[] = { rtv->getResourceViews()[0], 
+            scaledFrames[0].avg.shaderResourceView,
+                scaledFrames[0].min.shaderResourceView,
+                scaledFrames[0].max.shaderResourceView
+        };
+        deviceContext->PSSetShaderResources(0, 4, resources);
+        deviceContext->OMSetDepthStencilState(nullptr, 0);
+        deviceContext->RSSetState(nullptr);
+        deviceContext->OMSetBlendState(nullptr, nullptr, 0xFFFFFFFF);
+        deviceContext->IASetInputLayout(nullptr);
+        deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+        constantBuffer->bindToPixelShader(deviceContext);
+        deviceContext->VSSetShader(mappingVS, nullptr, 0);
+        deviceContext->PSSetShader(tonemapPS, nullptr, 0);
+        deviceContext->Draw(6, 0);
+    }
+
+
+    DXRenderTargetView* getRendertargetView()
+    {
+        return rtv;
+    }
 private:
     void createTextures(ID3D11Device* device, uint32_t width, uint32_t height)
     {
@@ -184,6 +281,20 @@ private:
             createSquareTexture(device, scaledFrame.max, i);
             scaledFrames.push_back(scaledFrame);
         }
+        D3D11_TEXTURE2D_DESC textureDesc = {};
+
+        textureDesc.Width = 1;
+        textureDesc.Height = 1;
+        textureDesc.MipLevels = 0;
+        textureDesc.ArraySize = 1;
+        textureDesc.Format = DXGI_FORMAT_R32_FLOAT;
+        textureDesc.SampleDesc.Count = 1;
+        textureDesc.Usage = D3D11_USAGE_STAGING;
+        textureDesc.BindFlags = 0;
+        textureDesc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+        textureDesc.MiscFlags = 0;
+
+        device->CreateTexture2D(&textureDesc, NULL, &readAvgTexture);
     }
 
     void createSquareTexture(ID3D11Device* device, Texture& text, uint32_t len)

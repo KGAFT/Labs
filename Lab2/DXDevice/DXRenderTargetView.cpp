@@ -142,6 +142,11 @@ std::vector<ID3D11RenderTargetView*> DXRenderTargetView::getRenderTargetViews() 
     return renderTargetViews;
 }
 
+std::vector<ID3D11ShaderResourceView*> DXRenderTargetView::getResourceViews() const
+{
+    return resourceViews;
+}
+
 void DXRenderTargetView::createColorAttachment(uint32_t colorAttachmentCount, uint32_t width, uint32_t height)
 {
     colorTextureDesc.Width = width;
