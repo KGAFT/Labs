@@ -21,7 +21,7 @@ Renderer::Renderer(Window* window) : engineWindow(window) {
     keys.push_back({ VK_F1, false, KEY_DOWN });
     keys.push_back({ VK_F2, false, KEY_DOWN });
     keys.push_back({ VK_F3, false, KEY_DOWN });
-
+    toneMapper.initialize(device.getDevice(), window->getWidth(), window->getHeight());
 }
 
 void Renderer::drawFrame() {

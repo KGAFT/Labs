@@ -1,4 +1,5 @@
 #pragma once
+#include "ToneMapper.h"
 #include "../DXDevice/DXSwapChain.h"
 #include "../DXDevice/DXDevice.h"
 #include "../DXShader/Shader.h"
@@ -35,6 +36,8 @@ private:
 	LightConstant lightConstantData{};
 	ConstantBuffer* constantBuffer;
 	ConstantBuffer* lightConstant;
+	ToneMapper toneMapper;
+	
 	VertexBuffer* cubeVertex = nullptr;
 	IndexBuffer* cubeIndex = nullptr;
 	Camera camera;

@@ -44,5 +44,5 @@ float4 main(PixelShaderInput psInput) : SV_Target
 	   }
 	   
 	   float3 finalColor = ambient + lightImpact;
-	   return float4(finalColor, 1.0);
+	   return float4(makeHDR(finalColor, 1.0), 1.0);
 }
