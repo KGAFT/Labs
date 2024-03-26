@@ -49,6 +49,7 @@ private:
     std::chrono::time_point<std::chrono::steady_clock> lastFrameTime;
     ID3D11Texture2D* readAvgTexture;
     float adapt = 0;
+    float s = 0.5f;
 public:
 
     void initialize(ID3D11Device* device, uint32_t width, uint32_t height)
@@ -261,6 +262,17 @@ public:
     DXRenderTargetView* getRendertargetView()
     {
         return rtv;
+    }
+
+    void clearRenderTarget(ID3D11DeviceContext* deviceContext)
+    {
+        rtv->clearColorAttachments(deviceContext, 0.25f, 0.25f, 0.25f, 1.0f, 0);
+        float color[4] = { 0.25f, 0.25f, 0.25f, 1.0f };
+        for (auto& scaledFrame : scaledFrames)
+        {
+            deviceContext->OMSetRenderTargets(1, &scaledFrame.avg.renderTargetView, NULL);
+            deviceContext->ClearRenderTargetView(scaledFrame.avg.renderTargetView, color);
+        }
     }
 private:
     void createTextures(ID3D11Device* device, uint32_t width, uint32_t height)

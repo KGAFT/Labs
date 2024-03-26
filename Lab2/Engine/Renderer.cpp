@@ -25,12 +25,23 @@ Renderer::Renderer(Window* window) : engineWindow(window) {
 }
 
 void Renderer::drawFrame() {
+    toneMapper.clearRenderTarget(device.getDeviceContext());
+    
+    toneMapper.getRendertargetView()->bind(device.getDeviceContext(), engineWindow->getWidth(), engineWindow->getHeight(), 0);
+    shader->bind(device.getDeviceContext());
+    constantBuffer->bindToVertexShader(device.getDeviceContext());
+    lightConstant->bindToPixelShader(device.getDeviceContext());
+    shader->draw(device.getDeviceContext(), cubeIndex, cubeVertex);
+
+    toneMapper.renderBrightness(device.getDeviceContext());
+    
+    
     swapChain->clearRenderTargets(device.getDeviceContext(), 0,0,0, 1.0f);
     swapChain->bind(device.getDeviceContext(), engineWindow->getWidth(), engineWindow->getHeight());
 
     shaderConstant.cameraMatrix = camera.getViewMatrix();
 
-    DirectX::XMMATRIX mProjection = DirectX::XMMatrixPerspectiveFovLH(DirectX::XMConvertToRadians(90), (float)engineWindow->getWidth() / (float)engineWindow->getHeight(), 0.001, 20);
+    DirectX::XMMATRIX mProjection = DirectX::XMMatrixPerspectiveFovLH(DirectX::XMConvertToRadians(90), (float)engineWindow->getWidth() / (float)engineWindow->getHeight(), 0.001, 2000);
     shaderConstant.cameraMatrix = XMMatrixMultiply(shaderConstant.cameraMatrix, mProjection);
     lightConstantData.cameraPosition = camera.getPosition();
     lightConstant->updateData(device.getDeviceContext(), &lightConstantData);
