@@ -39,7 +39,7 @@ public:
 
 int main()
 {
-    auto window = Window::createWindow(800, 600, L"Lab2");
+    auto window = Window::createWindow(1920, 1080, L"Lab2");
   //  window->getInputSystem()->addKeyCallback(new TestCB);
     //window->getInputSystem()->addMouseCallback(new TestMouseCB);
     Renderer renderer(window);

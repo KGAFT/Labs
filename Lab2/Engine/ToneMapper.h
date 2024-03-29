@@ -216,7 +216,7 @@ public:
             deviceContext->Draw(6, 0);
         }
     }
-    void RenderTonemap(ID3D11DeviceContext* deviceContext)
+    void renderTonemap(ID3D11DeviceContext* deviceContext)
     {
         auto time = std::chrono::high_resolution_clock::now();
         float dtime = std::chrono::duration<float, std::milli>(time - lastFrameTime).count() * 0.001;
@@ -230,7 +230,7 @@ public:
         if (ResourceDesc.pData)
         {
             float* pData = reinterpret_cast<float*>(ResourceDesc.pData);
-            avg = pData[0];
+            avg = *((float*)ResourceDesc.pData);
         }
         deviceContext->Unmap(readAvgTexture, 0);
 
@@ -267,6 +267,7 @@ public:
     void clearRenderTarget(ID3D11DeviceContext* deviceContext)
     {
         rtv->clearColorAttachments(deviceContext, 0.25f, 0.25f, 0.25f, 1.0f, 0);
+        rtv->clearDepthAttachments(deviceContext);
         float color[4] = { 0.25f, 0.25f, 0.25f, 1.0f };
         for (auto& scaledFrame : scaledFrames)
         {
@@ -284,7 +285,6 @@ private:
         {
             scaledTexturesAmount++;
         }
-
         for (int i = 0; i < scaledTexturesAmount + 1; i++)
         {
             ScaledFrame scaledFrame;
@@ -307,6 +307,7 @@ private:
         textureDesc.MiscFlags = 0;
 
         device->CreateTexture2D(&textureDesc, NULL, &readAvgTexture);
+
     }
 
     void createSquareTexture(ID3D11Device* device, Texture& text, uint32_t len)

@@ -22,9 +22,35 @@ Renderer::Renderer(Window* window) : engineWindow(window) {
     keys.push_back({ VK_F2, false, KEY_DOWN });
     keys.push_back({ VK_F3, false, KEY_DOWN });
     toneMapper.initialize(device.getDevice(), window->getWidth(), window->getHeight());
+
+    D3D11_SAMPLER_DESC desc = {};
+
+    desc.Filter = D3D11_FILTER_ANISOTROPIC;
+    desc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+    desc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+    desc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+    desc.MinLOD = -D3D11_FLOAT32_MAX;
+    desc.MaxLOD = D3D11_FLOAT32_MAX;
+    desc.MipLODBias = 0.0f;
+    desc.MaxAnisotropy = 16;
+    desc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+    desc.BorderColor[0] = desc.BorderColor[1] = desc.BorderColor[2] = desc.BorderColor[3] = 1.0f;
+      
+    if(FAILED(device.getDevice()->CreateSamplerState(&desc, &sampler)))
+    {
+        throw std::runtime_error("Failed to create sampler");
+    }
 }
 
 void Renderer::drawFrame() {
+    shaderConstant.cameraMatrix = camera.getViewMatrix();
+
+    DirectX::XMMATRIX mProjection = DirectX::XMMatrixPerspectiveFovLH(DirectX::XMConvertToRadians(90), (float)engineWindow->getWidth() / (float)engineWindow->getHeight(), 0.001, 2000);
+    shaderConstant.cameraMatrix = XMMatrixMultiply(shaderConstant.cameraMatrix, mProjection);
+    lightConstantData.cameraPosition = camera.getPosition();
+    constantBuffer->updateData(device.getDeviceContext(), &shaderConstant);
+    lightConstant->updateData(device.getDeviceContext(), &lightConstantData);
+    
     toneMapper.clearRenderTarget(device.getDeviceContext());
     
     toneMapper.getRendertargetView()->bind(device.getDeviceContext(), engineWindow->getWidth(), engineWindow->getHeight(), 0);
@@ -33,25 +59,26 @@ void Renderer::drawFrame() {
     lightConstant->bindToPixelShader(device.getDeviceContext());
     shader->draw(device.getDeviceContext(), cubeIndex, cubeVertex);
 
+   
+    
     toneMapper.renderBrightness(device.getDeviceContext());
-    
-    
+
     swapChain->clearRenderTargets(device.getDeviceContext(), 0,0,0, 1.0f);
+    device.getDeviceContext()->PSSetSamplers(0, 1, &sampler);
+
     swapChain->bind(device.getDeviceContext(), engineWindow->getWidth(), engineWindow->getHeight());
+    toneMapper.renderTonemap(device.getDeviceContext());
+    
+    
 
-    shaderConstant.cameraMatrix = camera.getViewMatrix();
 
-    DirectX::XMMATRIX mProjection = DirectX::XMMatrixPerspectiveFovLH(DirectX::XMConvertToRadians(90), (float)engineWindow->getWidth() / (float)engineWindow->getHeight(), 0.001, 2000);
-    shaderConstant.cameraMatrix = XMMatrixMultiply(shaderConstant.cameraMatrix, mProjection);
-    lightConstantData.cameraPosition = camera.getPosition();
-    lightConstant->updateData(device.getDeviceContext(), &lightConstantData);
-
+/*
     constantBuffer->updateData(device.getDeviceContext(), &shaderConstant);
     shader->bind(device.getDeviceContext());
     constantBuffer->bindToVertexShader(device.getDeviceContext());
     lightConstant->bindToPixelShader(device.getDeviceContext());
     shader->draw(device.getDeviceContext(), cubeIndex, cubeVertex);
-
+*/
     swapChain->present(true);
 }
 

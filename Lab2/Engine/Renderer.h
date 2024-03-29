@@ -37,7 +37,7 @@ private:
 	ConstantBuffer* constantBuffer;
 	ConstantBuffer* lightConstant;
 	ToneMapper toneMapper;
-	
+	ID3D11SamplerState* sampler;
 	VertexBuffer* cubeVertex = nullptr;
 	IndexBuffer* cubeIndex = nullptr;
 	Camera camera;
