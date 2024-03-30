@@ -2,28 +2,6 @@
 #include "Engine/Renderer.h"
 #include <iostream>
 
-class TestCB : public IWindowKeyCallback {
-public:
-    TestCB() {
-        keys.push_back({ 'w', true, KEY_DOWN });
-        keys.push_back({ 's', true, KEY_DOWN });
-        keys.push_back({ VK_F1, false, KEY_DOWN });
-    }
-private:
-    std::vector<WindowKey> keys;
-public:
-    void keyEvent(WindowKey key) override {
-        if (!key.isChar) {
-            std::cout << "F1" << std::endl;
-        } else {
-            std::cout << (char)key.key << std::endl;
-        }
-    }
-    WindowKey* getKeys(uint32_t* pKeysAmountOut) override {
-        *pKeysAmountOut = keys.size();
-        return keys.data();
-    }
-};
 
 class TestMouseCB : public IWindowMouseCallback {
 public:
@@ -40,8 +18,6 @@ public:
 int main()
 {
     auto window = Window::createWindow(1920, 1080, L"Lab2");
-  //  window->getInputSystem()->addKeyCallback(new TestCB);
-    //window->getInputSystem()->addMouseCallback(new TestMouseCB);
     Renderer renderer(window);
 
     while (!window->isNeedToClose()) {

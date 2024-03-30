@@ -60,6 +60,7 @@ private:
 			break;
 		case WM_MOUSEMOVE:
 			checkMovementCallbacks(GET_X_LPARAM(lparam), GET_Y_LPARAM(lparam));
+			break;
 		default:
 			if (msg >= 0x0201 && msg <= 0x0209) {
 				checkMouseKeyCallbacks(msg);
