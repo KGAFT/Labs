@@ -26,7 +26,7 @@ Renderer::Renderer(Window* window) : engineWindow(window) {
     keys.push_back({ VK_F1, false, KEY_DOWN });
     keys.push_back({ VK_F2, false, KEY_DOWN });
     keys.push_back({ VK_F3, false, KEY_DOWN });
-    toneMapper.initialize(device.getDevice(), window->getWidth(), window->getHeight());
+    toneMapper.initialize(device.getDevice(), window->getWidth(), window->getHeight(), DX_SWAPCHAIN_DEFAULT_BUFFER_AMOUNT);
 
     D3D11_SAMPLER_DESC desc = {};
 
@@ -56,22 +56,22 @@ void Renderer::drawFrame() {
     constantBuffer->updateData(device.getDeviceContext(), &shaderConstant);
     lightConstant->updateData(device.getDeviceContext(), &lightConstantData);
     
-    toneMapper.clearRenderTarget(device.getDeviceContext());
+    toneMapper.clearRenderTarget(device.getDeviceContext(), swapChain->getCurrentImage());
     
-    toneMapper.getRendertargetView()->bind(device.getDeviceContext(), engineWindow->getWidth(), engineWindow->getHeight(), 0);
     shader->bind(device.getDeviceContext());
+    toneMapper.getRendertargetView()->bind(device.getDeviceContext(), engineWindow->getWidth(), engineWindow->getHeight(), swapChain->getCurrentImage());
     constantBuffer->bindToVertexShader(device.getDeviceContext());
     lightConstant->bindToPixelShader(device.getDeviceContext());
     shader->draw(device.getDeviceContext(), cubeIndex, cubeVertex);
     
-    toneMapper.makeBrightnessMaps(device.getDeviceContext());
+    toneMapper.makeBrightnessMaps(device.getDeviceContext(), swapChain->getCurrentImage());
     
     swapChain->clearRenderTargets(device.getDeviceContext(), 0,0,0, 1.0f);
     device.getDeviceContext()->PSSetSamplers(0, 1, &sampler);
 
     swapChain->bind(device.getDeviceContext(), engineWindow->getWidth(), engineWindow->getHeight());
 
-    toneMapper.postProcessToneMap(device.getDeviceContext());
+    toneMapper.postProcessToneMap(device.getDeviceContext(), swapChain->getCurrentImage());
     
     swapChain->present(true);
 }

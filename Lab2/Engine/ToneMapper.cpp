@@ -1,9 +1,16 @@
 ﻿#include "ToneMapper.h"
+ID3D11RenderTargetView* unBindRtvs[5] = {0,0,0,0,0};
+ID3D11ShaderResourceView* unBindresourceViews[5] = {0,0,0,0,0};
+void unBindRenderTargets(ID3D11DeviceContext* context)
+{
+    context->OMSetRenderTargets(5, unBindRtvs, NULL);
+    context->PSSetShaderResources(0, 5, unBindresourceViews);
+}
 
-void ToneMapper::initialize(ID3D11Device* device, uint32_t width, uint32_t height)
+void ToneMapper::initialize(ID3D11Device* device, uint32_t width, uint32_t height, uint32_t imageInSwapChain)
 {
     this->device = device;
-    createTextures(device, width, height);
+    createTextures(device, width, height, imageInSwapChain);
     HRESULT result = 0;
 
     D3D11_SAMPLER_DESC desc = {};
@@ -145,10 +152,10 @@ void ToneMapper::destroyScaledBrighnessMaps()
 void ToneMapper::resize(uint32_t width, uint32_t height)
 {
     destroyScaledBrighnessMaps();
-    createTextures(device, width, height);
+    createTextures(device, width, height, 0);
 }
 
-void ToneMapper::makeBrightnessMaps(ID3D11DeviceContext* deviceContext)
+void ToneMapper::makeBrightnessMaps(ID3D11DeviceContext* deviceContext, uint32_t currentImage)
 {
     for (int i = scaledTexturesAmount; i >= 0; i--)
     {
@@ -183,9 +190,9 @@ void ToneMapper::makeBrightnessMaps(ID3D11DeviceContext* deviceContext)
         deviceContext->RSSetViewports(1, &viewport);
 
         ID3D11ShaderResourceView* resources[] = {
-            i == scaledTexturesAmount ? rtv->getResourceViews()[0] : scaledFrames[i + 1].avg.shaderResourceView,
-            i == scaledTexturesAmount ? rtv->getResourceViews()[0] : scaledFrames[i + 1].min.shaderResourceView,
-            i == scaledTexturesAmount ? rtv->getResourceViews()[0] : scaledFrames[i + 1].max.shaderResourceView
+            i == scaledTexturesAmount ? rtv->getResourceViews()[currentImage] : scaledFrames[i + 1].avg.shaderResourceView,
+            i == scaledTexturesAmount ? rtv->getResourceViews()[currentImage] : scaledFrames[i + 1].min.shaderResourceView,
+            i == scaledTexturesAmount ? rtv->getResourceViews()[currentImage] : scaledFrames[i + 1].max.shaderResourceView
         };
         deviceContext->PSSetShaderResources(0, 3, resources);
         deviceContext->OMSetDepthStencilState(nullptr, 0);
@@ -196,10 +203,12 @@ void ToneMapper::makeBrightnessMaps(ID3D11DeviceContext* deviceContext)
         deviceContext->VSSetShader(mappingVS, nullptr, 0);
         deviceContext->PSSetShader(i == scaledTexturesAmount ? brightnessPS : downsamplePS, nullptr, 0);
         deviceContext->Draw(6, 0);
+        
+        unBindRenderTargets(deviceContext);
     }
 }
 
-void ToneMapper::postProcessToneMap(ID3D11DeviceContext* deviceContext)
+void ToneMapper::postProcessToneMap(ID3D11DeviceContext* deviceContext, uint32_t currentImage)
 {
     auto time = std::chrono::high_resolution_clock::now();
     float dtime = std::chrono::duration<float, std::milli>(time - lastFrameTime).count() * 0.001;
@@ -228,7 +237,7 @@ void ToneMapper::postProcessToneMap(ID3D11DeviceContext* deviceContext)
     constantBuffer->updateData(deviceContext, &adaptData);
 
     ID3D11ShaderResourceView* resources[] = {
-        rtv->getResourceViews()[0],
+        rtv->getResourceViews()[currentImage],
         scaledFrames[0].avg.shaderResourceView,
         scaledFrames[0].min.shaderResourceView,
         scaledFrames[0].max.shaderResourceView
@@ -243,6 +252,7 @@ void ToneMapper::postProcessToneMap(ID3D11DeviceContext* deviceContext)
     deviceContext->VSSetShader(mappingVS, nullptr, 0);
     deviceContext->PSSetShader(tonemapPS, nullptr, 0);
     deviceContext->Draw(6, 0);
+    unBindRenderTargets(deviceContext);
 }
 
 DXRenderTargetView* ToneMapper::getRendertargetView()
@@ -250,9 +260,9 @@ DXRenderTargetView* ToneMapper::getRendertargetView()
     return rtv;
 }
 
-void ToneMapper::clearRenderTarget(ID3D11DeviceContext* deviceContext)
+void ToneMapper::clearRenderTarget(ID3D11DeviceContext* deviceContext, uint32_t currentImage)
 {
-    rtv->clearColorAttachments(deviceContext, 0.25f, 0.25f, 0.25f, 1.0f, 0);
+    rtv->clearColorAttachments(deviceContext, 0.25f, 0.25f, 0.25f, 1.0f, currentImage);
     rtv->clearDepthAttachments(deviceContext);
     float color[4] = {0.25f, 0.25f, 0.25f, 1.0f};
     for (auto& scaledFrame : scaledFrames)
@@ -261,13 +271,14 @@ void ToneMapper::clearRenderTarget(ID3D11DeviceContext* deviceContext)
     }
 }
 
-void ToneMapper::createTextures(ID3D11Device* device, uint32_t width, uint32_t height)
+void ToneMapper::createTextures(ID3D11Device* device, uint32_t width, uint32_t height, uint32_t imagesInSwapChainAmount)
 {
     if(!rtv)
     {
-        rtv = new DXRenderTargetView(device, 1, width, height);
+        rtv = new DXRenderTargetView(device, imagesInSwapChainAmount, width, height);
     } else
     {
+        rtv->destroy();
         rtv->resize(width, height);
     }
     int minSide = min(width, height);
@@ -299,6 +310,8 @@ void ToneMapper::createTextures(ID3D11Device* device, uint32_t width, uint32_t h
 
     device->CreateTexture2D(&textureDesc, NULL, &readAvgTexture);
 }
+
+
 
 void ToneMapper::createSquareTexture(ID3D11Device* device, Texture& text, uint32_t len)
 {

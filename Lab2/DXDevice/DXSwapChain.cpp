@@ -40,6 +40,11 @@ void DXSwapChain::present(bool vsync) {
 	swapChain->Present(vsync, 0);
 }
 
+uint32_t DXSwapChain::getCurrentImage() const
+{
+	return curImageCounter;
+}
+
 DXSwapChain::~DXSwapChain() {
 	destroy();
 }

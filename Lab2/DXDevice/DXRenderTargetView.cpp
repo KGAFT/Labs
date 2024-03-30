@@ -112,7 +112,7 @@ void DXRenderTargetView::createRenderTarget(const char* name)
 
 void DXRenderTargetView::resize(uint32_t width, uint32_t height, const char* name)
 {
-    createColorAttachment((uint32_t)colorAttachments.size(), width, height);
+    createColorAttachment(colorAttachments.size(), width, height);
     createDepthAttachment(width, height);
     createRenderTarget(name);
     createDepthStencilView(name);
@@ -251,4 +251,5 @@ void DXRenderTargetView::destroy()
     {
         depthAttachment->Release();
     }
+    resourceViews.clear();          
 }

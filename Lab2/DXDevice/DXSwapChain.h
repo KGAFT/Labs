@@ -24,7 +24,8 @@ public:
 	void bind(ID3D11DeviceContext* context, uint32_t width, uint32_t height);
 	void clearRenderTargets(ID3D11DeviceContext* context, float r, float g, float b, float a);
 	void present(bool vsync);
-public:
+	uint32_t getCurrentImage() const;
+
 	~DXSwapChain();
 private:
 	void destroyForRecreate();
