@@ -8,17 +8,18 @@
 class Window
 {
 public:
-	static Window* createWindow(uint32_t width, uint32_t height, const wchar_t* windowTitle);
+	static Window* createWindow(HINSTANCE instance, uint32_t width, uint32_t height, const wchar_t* windowTitle);
 	static LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam);
 private:
-	Window();
+	Window(HINSTANCE instance);
 private:
 	HWND windowHandle;
+	HINSTANCE instance;
 	uint32_t width;
 	uint32_t height;
 	const wchar_t* title;
 	bool needToClose = false;
-	WindowInputSystem inputSystem;
+	WindowInputSystem* inputSystem;
 	std::vector<void(*)(uint32_t, uint32_t)> resizeCallbacks;
 	bool windowReady = false;
 public:

@@ -5,7 +5,7 @@
 #include "../DXShader/Shader.h"
 #include "../DXShader/ConstantBuffer.h"
 #include "Camera/Camera.h"
-
+#include <d3d11_1.h>
 struct ShaderConstant {
 	DirectX::XMMATRIX worldMatrix;
 	DirectX::XMMATRIX cameraMatrix;
@@ -38,11 +38,12 @@ private:
 	alignas(256) LightConstant lightConstantData{};
 	ConstantBuffer* constantBuffer;
 	ConstantBuffer* lightConstant;
-	ToneMapper toneMapper;
+	ToneMapper* toneMapper;
 	ID3D11SamplerState* sampler;
 	VertexBuffer* cubeVertex = nullptr;
 	IndexBuffer* cubeIndex = nullptr;
 	Camera camera;
+	ID3DUserDefinedAnnotation* annotation;
 public:
 	void drawFrame();
 	void release();

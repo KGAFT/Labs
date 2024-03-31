@@ -4,17 +4,18 @@
 
 DXSwapChain* Renderer::swapChain = nullptr;
 Renderer* Renderer::instance = nullptr;
+
 void Renderer::resizeCallback(uint32_t width, uint32_t height) {
     if (swapChain) {
         swapChain->resize(width, height);
-        instance->toneMapper.resize(width, height);
+        instance->toneMapper->resize(width, height);
     }
     
 }
 
 Renderer::Renderer(Window* window) : engineWindow(window) {
     instance = this;
-	swapChain = device.getSwapChain(window, "Lab 1 default swap chain");
+	swapChain = device.getSwapChain(window, "Lab2 default swap chain");
     window->addResizeCallback(resizeCallback);
     window->getInputSystem()->addKeyCallback(&camera);
     window->getInputSystem()->addMouseCallback(&camera);
@@ -22,12 +23,13 @@ Renderer::Renderer(Window* window) : engineWindow(window) {
     loadCube();
     loadConstants();
     window->getInputSystem()->addKeyCallback(this);
-    keys.push_back({ VK_SPACE, false, KEY_DOWN });
-    keys.push_back({ VK_F1, false, KEY_DOWN });
-    keys.push_back({ VK_F2, false, KEY_DOWN });
-    keys.push_back({ VK_F3, false, KEY_DOWN });
-    toneMapper.initialize(device.getDevice(), window->getWidth(), window->getHeight(), DX_SWAPCHAIN_DEFAULT_BUFFER_AMOUNT);
-
+    keys.push_back({ DIK_F1, KEY_DOWN });
+    keys.push_back({ DIK_F2, KEY_DOWN });
+    keys.push_back({ DIK_F3, KEY_DOWN });
+    device.getDeviceContext()->QueryInterface(IID_PPV_ARGS(&annotation));
+    toneMapper = new ToneMapper(device.getDevice(), annotation);
+    toneMapper->initialize(window->getWidth(), window->getHeight(), DX_SWAPCHAIN_DEFAULT_BUFFER_AMOUNT);
+    
     D3D11_SAMPLER_DESC desc = {};
 
     desc.Filter = D3D11_FILTER_ANISOTROPIC;
@@ -50,29 +52,26 @@ Renderer::Renderer(Window* window) : engineWindow(window) {
 void Renderer::drawFrame() {
     shaderConstant.cameraMatrix = camera.getViewMatrix();
 
-    DirectX::XMMATRIX mProjection = DirectX::XMMatrixPerspectiveFovLH(DirectX::XMConvertToRadians(90), (float)engineWindow->getWidth() / (float)engineWindow->getHeight(), 0.001, 2000);
+    XMMATRIX mProjection = DirectX::XMMatrixPerspectiveFovLH(XMConvertToRadians(90), (float)engineWindow->getWidth() / (float)engineWindow->getHeight(), 0.001, 2000);
     shaderConstant.cameraMatrix = XMMatrixMultiply(shaderConstant.cameraMatrix, mProjection);
     lightConstantData.cameraPosition = camera.getPosition();
     constantBuffer->updateData(device.getDeviceContext(), &shaderConstant);
     lightConstant->updateData(device.getDeviceContext(), &lightConstantData);
     
-    toneMapper.clearRenderTarget(device.getDeviceContext(), swapChain->getCurrentImage());
+    toneMapper->clearRenderTarget(device.getDeviceContext(), swapChain->getCurrentImage());
     
     shader->bind(device.getDeviceContext());
-    toneMapper.getRendertargetView()->bind(device.getDeviceContext(), engineWindow->getWidth(), engineWindow->getHeight(), swapChain->getCurrentImage());
+    toneMapper->getRendertargetView()->bind(device.getDeviceContext(), engineWindow->getWidth(), engineWindow->getHeight(), swapChain->getCurrentImage());
     constantBuffer->bindToVertexShader(device.getDeviceContext());
     lightConstant->bindToPixelShader(device.getDeviceContext());
     shader->draw(device.getDeviceContext(), cubeIndex, cubeVertex);
     
-    toneMapper.makeBrightnessMaps(device.getDeviceContext(), swapChain->getCurrentImage());
-    
+    toneMapper->makeBrightnessMaps(device.getDeviceContext(), swapChain->getCurrentImage());
     swapChain->clearRenderTargets(device.getDeviceContext(), 0,0,0, 1.0f);
     device.getDeviceContext()->PSSetSamplers(0, 1, &sampler);
 
     swapChain->bind(device.getDeviceContext(), engineWindow->getWidth(), engineWindow->getHeight());
-
-    toneMapper.postProcessToneMap(device.getDeviceContext(), swapChain->getCurrentImage());
-    
+    toneMapper->postProcessToneMap(device.getDeviceContext(), swapChain->getCurrentImage());
     swapChain->present(true);
 }
 
@@ -146,7 +145,7 @@ void Renderer::release() {
 
 void Renderer::keyEvent(WindowKey key)
 {
-    uint32_t index = key.key - VK_F1;
+    uint32_t index = key.key - DIK_F1;
     lightConstantData.sources[index].intensity *= 10;
     if (lightConstantData.sources[index].intensity > 100) {
         lightConstantData.sources[index].intensity = 1;

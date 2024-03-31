@@ -12,12 +12,12 @@ public:
         r = 5.0f;
         theta = -XM_PIDIV4;
         phi = XM_PIDIV4;
-        keys.push_back({ 'w', true, KEY_DOWN });
-        keys.push_back({ 's', true, KEY_DOWN });
-        keys.push_back({ 'a', true, KEY_DOWN });
-        keys.push_back({ 'd', true, KEY_DOWN });
-        keys.push_back({ 'c', true, KEY_DOWN });
-        keys.push_back({ VK_SPACE, false, KEY_DOWN });
+        keys.push_back({ DIK_W,KEY_DOWN });
+        keys.push_back({ DIK_S,  KEY_DOWN });
+        keys.push_back({ DIK_A, KEY_DOWN });
+        keys.push_back({ DIK_D, KEY_DOWN });
+        keys.push_back({ DIK_C,  KEY_DOWN });
+        keys.push_back({ DIK_SPACE, KEY_DOWN });
 
         position = XMFLOAT3(focus.x - cosf(theta) * cosf(phi) * r,
             focus.y - sinf(theta) * r,
@@ -87,22 +87,22 @@ public:
         float sens = 0.11f;
         float dx = 0,  dy = 0, dz = 0;
         switch (key.key) {
-        case 'w':
+        case DIK_W:
             dx = sens;
             break;
-        case 's':
+        case DIK_S:
             dx = -1*sens;
             break;
-        case 'a':
+        case DIK_A:
             dz = sens;
             break;
-        case 'd':
+        case DIK_D:
             dz = -1*sens;
             break;
-        case 'c':
+        case DIK_C:
             dy = -1*sens;
             break;
-        case VK_SPACE:
+        case DIK_SPACE:
             dy = sens;
         default:
             break;

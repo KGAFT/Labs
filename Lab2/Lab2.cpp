@@ -15,9 +15,10 @@ public:
     }
 };
 
-int main()
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
+    PSTR lpCmdLine, int nCmdShow)
 {
-    auto window = Window::createWindow(1920, 1080, L"Lab2");
+    auto window = Window::createWindow(hInstance, 1920, 1080, L"Lab2");
     Renderer renderer(window);
 
     while (!window->isNeedToClose()) {
@@ -28,3 +29,4 @@ int main()
     renderer.release();
     return 0;
 }
+

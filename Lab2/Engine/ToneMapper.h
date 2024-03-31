@@ -2,6 +2,7 @@
 
 #include <chrono>
 #include <d3d11.h>
+#include <d3d11_1.h>
 #include <DirectXMath.h>
 #include <vector>
 #include <d3dcompiler.h>
@@ -31,6 +32,13 @@ struct AdaptData
 
 class ToneMapper
 {
+public:
+    ToneMapper(ID3D11Device* device, ID3DUserDefinedAnnotation* annotations)
+        : device(device),
+          annotations(annotations)
+    {
+    }
+
 private:
     ID3D11Device* device;
     DXRenderTargetView* rtv;
@@ -48,11 +56,12 @@ private:
     ID3D11PixelShader* tonemapPS;
     std::chrono::time_point<std::chrono::steady_clock> lastFrameTime;
     ID3D11Texture2D* readAvgTexture;
+    ID3DUserDefinedAnnotation* annotations;
     float adapt = 0;
     float s = 0.5f;
 
 public:
-    void initialize(ID3D11Device* device, uint32_t width, uint32_t height, uint32_t imagesInSwapChainAmount);
+    void initialize(uint32_t width, uint32_t height, uint32_t imagesInSwapChainAmount);
 
     
     void resize(uint32_t width, uint32_t height);
@@ -64,7 +73,8 @@ public:
     void clearRenderTarget(ID3D11DeviceContext* deviceContext, uint32_t currentImage);
 
 private:
-    void createTextures(ID3D11Device* device, uint32_t width, uint32_t height, uint32_t imagesInSwapChainAmount);
-    void createSquareTexture(ID3D11Device* device, Texture& text, uint32_t len);
+    void createTextures(uint32_t width, uint32_t height, uint32_t imagesInSwapChainAmount);
+    void createSquareTexture(Texture& text, uint32_t len);
+    void loadShaders();
     void destroyScaledBrighnessMaps();
 };

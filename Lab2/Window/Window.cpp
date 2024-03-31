@@ -46,7 +46,7 @@ LRESULT CALLBACK Window::WndProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lpar
 }
 
 
-Window* Window::createWindow(uint32_t width, uint32_t height, const wchar_t* windowTitle) {
+Window* Window::createWindow(HINSTANCE instance, uint32_t width, uint32_t height, const wchar_t* windowTitle) {
 	WNDCLASSEX wc;
 	wc.cbClsExtra = NULL;
 	wc.cbSize = sizeof(WNDCLASSEX);
@@ -55,13 +55,13 @@ Window* Window::createWindow(uint32_t width, uint32_t height, const wchar_t* win
 	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
 	wc.hIcon = LoadIcon(NULL, IDI_APPLICATION);
 	wc.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
-	wc.hInstance = NULL;
+	wc.hInstance = instance;
 	wc.lpszClassName = L"MyWindowClass";
 	wc.lpszMenuName = L"";
 	wc.style = NULL;
 	wc.lpfnWndProc = &WndProc;
-
-	auto result = new Window();
+	
+	auto result = new Window(instance);
 	if (!::RegisterClassEx(&wc))
 		throw std::runtime_error("Failed to register window class");
 
@@ -74,13 +74,15 @@ Window* Window::createWindow(uint32_t width, uint32_t height, const wchar_t* win
 	result->width = width;
 	result->height = height;
 	result->title = windowTitle;
+	result->instance = instance;
+	result->inputSystem = new WindowInputSystem(instance, windowHandle);
 	ShowWindow(windowHandle, SW_SHOW);
 	UpdateWindow(windowHandle);
 	result->windowReady = true;
 	return result;
 }
 
-Window::Window(){}
+Window::Window(HINSTANCE instance) : instance(instance){}
 
 void Window::pollEvents() {
 	MSG msg;
@@ -114,7 +116,7 @@ uint32_t Window::getHeight() {
 
 WindowInputSystem* Window::getInputSystem()
 {
-	return &inputSystem;
+	return inputSystem;
 }
 
 void Window::checkResizeCallbacks() {
@@ -125,7 +127,7 @@ void Window::checkResizeCallbacks() {
 
 void Window::checkEvent(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam) {
 	if (this && windowReady) {
-		inputSystem.handlePollEvents(hwnd, msg, wparam, lparam);
+		inputSystem->handlePollEvents(hwnd, msg, wparam, lparam);
 	}
 	
 }
