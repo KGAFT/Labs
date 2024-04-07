@@ -80,7 +80,7 @@ public:
         oldPosY = (float)y;
     }
     void mouseKey(uint32_t key) override {
-        rotating = key == WM_LBUTTONDOWN ? true : key == WM_LBUTTONUP ? false : rotating;
+        rotating = key == WM_RBUTTONDOWN ? true : key == WM_RBUTTONUP ? false : rotating;
     }
 
     void keyEvent(WindowKey key) override {

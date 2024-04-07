@@ -2,7 +2,7 @@
 ID3D11RenderTargetView* unBindRtvs[5] = {0, 0, 0, 0, 0};
 ID3D11ShaderResourceView* unBindresourceViews[5] = {0, 0, 0, 0, 0};
 
-void unBindRenderTargets(ID3D11DeviceContext* context)
+void ToneMapper::unBindRenderTargets(ID3D11DeviceContext* context)
 {
     context->OMSetRenderTargets(5, unBindRtvs, NULL);
     context->PSSetShaderResources(0, 5, unBindresourceViews);
@@ -218,7 +218,6 @@ void ToneMapper::postProcessToneMap(ID3D11DeviceContext* deviceContext, uint32_t
     deviceContext->VSSetShader(mappingVS, nullptr, 0);
     deviceContext->PSSetShader(tonemapPS, nullptr, 0);
     deviceContext->Draw(6, 0);
-    unBindRenderTargets(deviceContext);
 #ifdef _DEBUG
     annotations->EndEvent();
     annotations->EndEvent();

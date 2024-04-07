@@ -74,7 +74,9 @@ public:
     WindowKey* getKeys(uint32_t* pKeysAmountOut) override;
 
 private:
+    void drawGui();
     void loadShader();
     void loadCube();
     void loadConstants();
+    void loadImgui();
 };

@@ -2,7 +2,6 @@
 #include "Engine/Renderer.h"
 #include <iostream>
 
-
 class TestMouseCB : public IWindowMouseCallback {
 public:
     void mouseMove(uint32_t x, uint32_t y) override {
@@ -20,7 +19,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 {
     auto window = Window::createWindow(hInstance, 1920, 1080, L"Lab3");
     Renderer renderer(window);
-
     while (!window->isNeedToClose()) {
         renderer.drawFrame();
 
