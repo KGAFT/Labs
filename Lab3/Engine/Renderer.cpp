@@ -196,16 +196,16 @@ void Renderer::drawGui()
         configuration.defaultFunction = 0;
         switch (currentItem)
         {
-        case 1:
+        case 0:
             configuration.defaultFunction = 1;
             break;
-        case 2:
+        case 1:
             configuration.normalDistribution = 1;
             break;
-        case 3:
+        case 2:
             configuration.geometryFunction = 1;
             break;
-        case 4:
+        case 3:
             configuration.fresnelFunction = 1;
             break;
         }
