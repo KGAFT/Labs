@@ -62,8 +62,8 @@ private:
     ConstantBuffer* pbrConfiguration;
     ToneMapper* toneMapper;
     ID3D11SamplerState* sampler;
-    VertexBuffer* cubeVertex = nullptr;
-    IndexBuffer* cubeIndex = nullptr;
+    VertexBuffer* sphereVertex = nullptr;
+    IndexBuffer* sphereIndex = nullptr;
     Camera camera;
     ID3DUserDefinedAnnotation* annotation;
 

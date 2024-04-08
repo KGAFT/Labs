@@ -81,7 +81,7 @@ void Renderer::drawFrame()
     constantBuffer->bindToVertexShader(device.getDeviceContext());
     lightConstant->bindToPixelShader(device.getDeviceContext());
     pbrConfiguration->bindToPixelShader(device.getDeviceContext(), 1);
-    shader->draw(device.getDeviceContext(), cubeIndex, cubeVertex);
+    shader->draw(device.getDeviceContext(), sphereIndex, sphereVertex);
 
     toneMapper->makeBrightnessMaps(device.getDeviceContext(), swapChain->getCurrentImage());
     swapChain->clearRenderTargets(device.getDeviceContext(), 0, 0, 0, 1.0f);
@@ -116,16 +116,16 @@ void Renderer::loadSphere()
     std::vector<float> vertices;
     std::vector<uint32_t> indices;
     makeSphere(vertices, indices, 25, 52, 52);
-    cubeVertex = shader->createVertexBuffer(device.getDevice(), vertices.size()*sizeof(float), 12 * sizeof(float), vertices.data(),
+    sphereVertex = shader->createVertexBuffer(device.getDevice(), vertices.size()*sizeof(float), 12 * sizeof(float), vertices.data(),
                                             "Sphere vertex buffer");
-    cubeIndex = shader->createIndexBuffer(device.getDevice(), indices.data(), indices.size(),
+    sphereIndex = shader->createIndexBuffer(device.getDevice(), indices.data(), indices.size(),
                                           "Sphere index buffer");
 }
 
 void Renderer::release()
 {
-    delete cubeVertex;
-    delete cubeIndex;
+    delete sphereVertex;
+    delete sphereIndex;
     delete constantBuffer;
     delete shader;
     delete swapChain;
