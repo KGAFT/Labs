@@ -1,9 +1,13 @@
 #include "Renderer.h"
 
 #include <iostream>
+#include <random>
+
 #include "../ImGUI/imgui.h"
 #include "../ImGUI/imgui_impl_dx11.h"
 #include "../ImGUI/imgui_impl_win32.h"
+
+#define PI 3.14159265359
 
 DXSwapChain* Renderer::swapChain = nullptr;
 Renderer* Renderer::instance = nullptr;
@@ -25,7 +29,7 @@ Renderer::Renderer(Window* window) : engineWindow(window)
     window->getInputSystem()->addKeyCallback(&camera);
     window->getInputSystem()->addMouseCallback(&camera);
     loadShader();
-    loadCube();
+    loadSphere();
     loadConstants();
     window->getInputSystem()->addKeyCallback(this);
     keys.push_back({DIK_F1, KEY_DOWN});
@@ -64,6 +68,7 @@ void Renderer::drawFrame()
                                                              (float)engineWindow->getWidth() / (float)engineWindow->
                                                              getHeight(), 0.001f, 2000.0f);
     shaderConstant.cameraMatrix = XMMatrixMultiply(shaderConstant.cameraMatrix, mProjection);
+    
     lightConstantData.cameraPosition = camera.getPosition();
     constantBuffer->updateData(device.getDeviceContext(), &shaderConstant);
     lightConstant->updateData(device.getDeviceContext(), &lightConstantData);
@@ -105,52 +110,16 @@ void Renderer::loadShader()
     shader->makeInputLayout(vertexInputs.data(), (uint32_t)vertexInputs.size());
 }
 
-void Renderer::loadCube()
+void Renderer::loadSphere()
 {
-    float vertices[] = {
-        -2.0, -2.0, 2.0, 0, 1, 0, -1, 0, 0.5f, 0.2f, 0.1f, 1.0f,
-        2.0, -2.0, 2.0, 1, 1, 0, -1, 0, 0.2f, 0.5f, 0.1f, 1.0f,
-        2.0, -2.0, -2.0, 1, 0, 0, -1, 0, 0.1f, 0.2f, 0.5f, 1.0f,
-        -2.0, -2.0, -2.0, 0, 0, 0, -1, 0, 0.5f, 0.1f, 0.2f, 1.0f,
 
-        -2.0, 2.0, -2.0, 0, 1, 0, 1, 0, 0.25f, 0.8f, 0.1f, 1.0f,
-        2.0, 2.0, -2.0, 1, 1, 0, 1, 0, 0.8f, 0.25f, 0.1f, 1.0f,
-        2.0, 2.0, 2.0, 1, 0, 0, 1, 0, 0.25f, 0.1f, 0.8f, 1.0f,
-        -2.0, 2.0, 2.0, 0, 0, 0, 1, 0, 0.1f, 0.8f, 0.25f, 1.0f,
-
-        2.0, -2.0, -2.0, 0, 1, 1, 0, 0, 0.9f, 0.1f, 0.2f, 1.0f,
-        2.0, -2.0, 2.0, 1, 1, 1, 0, 0, 0.1f, 0.9f, 0.2f, 1.0f,
-        2.0, 2.0, 2.0, 1, 0, 1, 0, 0, 0.9f, 0.2f, 0.1f, 1.0f,
-        2.0, 2.0, -2.0, 0, 0, 1, 0, 0, 0.2f, 0.1f, 0.9f, 1.0f,
-
-        -2.0, -2.0, 2.0, 0, 1, -1, 0, 0, 0.7f, 0.3f, 0.5f, 1.0f,
-        -2.0, -2.0, -2.0, 1, 1, -1, 0, 0, 0.3f, 0.7f, 0.5f, 1.0f,
-        -2.0, 2.0, -2.0, 1, 0, -1, 0, 0, 0.7f, 0.5f, 0.3f, 1.0f,
-        -2.0, 2.0, 2.0, 0, 0, -1, 0, 0, 0.5f, 0.3f, 0.5f, 1.0f,
-
-        2.0, -2.0, 2.0, 0, 1, 0, 0, 1, 0.12f, 0.23f, 0.4f, 1.0f,
-        -2.0, -2.0, 2.0, 1, 1, 0, 0, 1, 0.23f, 0.12f, 0.4f, 1.0f,
-        -2.0, 2.0, 2.0, 1, 0, 0, 0, 1, 0.4f, 0.23f, 0.12f, 1.0f,
-        2.0, 2.0, 2.0, 0, 0, 0, 0, 1, 0.12f, 0.4f, 0.23f, 1.0f,
-
-        -2.0, -2.0, -2.0, 0, 1, 0, 0, -1, 0.25f, 0.1f, 0.15f, 1.0f,
-        2.0, -2.0, -2.0, 1, 1, 0, 0, -1, 0.1f, 0.25f, 0.15f, 1.0f,
-        2.0, 2.0, -2.0, 1, 0, 0, 0, -1, 0.25f, 0.15f, 0.1f, 1.0f,
-        -2.0, 2.0, -2.0, 0, 0, 0, 0, -1, 0.15f, 0.1f, 0.1f, 1.0f
-    };
-    uint32_t indices[] = {
-        0, 2, 1, 0, 3, 2,
-        4, 6, 5, 4, 7, 6,
-        8, 10, 9, 8, 11, 10,
-        12, 14, 13, 12, 15, 14,
-        16, 18, 17, 16, 19, 18,
-        20, 22, 21, 20, 23, 22
-    };
-
-    cubeVertex = shader->createVertexBuffer(device.getDevice(), sizeof(vertices), 12 * sizeof(float), vertices,
-                                            "Cube vertex buffer");
-    cubeIndex = shader->createIndexBuffer(device.getDevice(), indices, sizeof(indices) / sizeof(uint32_t),
-                                          "Cube index buffer");
+    std::vector<float> vertices;
+    std::vector<uint32_t> indices;
+    makeSphere(vertices, indices, 25, 52, 52);
+    cubeVertex = shader->createVertexBuffer(device.getDevice(), vertices.size()*sizeof(float), 12 * sizeof(float), vertices.data(),
+                                            "Sphere vertex buffer");
+    cubeIndex = shader->createIndexBuffer(device.getDevice(), indices.data(), indices.size(),
+                                          "Sphere index buffer");
 }
 
 void Renderer::release()
@@ -176,6 +145,127 @@ WindowKey* Renderer::getKeys(uint32_t* pKeysAmountOut)
 {
     *pKeysAmountOut = (uint32_t)keys.size();
     return keys.data();
+}
+
+void Renderer::makeSphere(std::vector<float>& verticesOutput, std::vector<uint32_t>& indicesOutput, float radius, uint32_t layerTile, uint32_t circumferenceTile)
+{
+    
+    uint32_t circCnt = (int)( circumferenceTile + 0.5f );
+    if ( circCnt < 4 ) circCnt = 4;
+    uint32_t circCnt_2 = circCnt / 2;
+    uint32_t layerCount = (int)( layerTile + 0.5f );
+    if ( layerCount < 2 ) layerCount = 2;
+
+
+    std::default_random_engine gen;
+    std::uniform_real_distribution<double> colorGenerator(0.0,
+                                                        1.0);
+    for ( uint32_t tbInx = 0; tbInx <= layerCount; tbInx ++ )
+    {
+        float v = ( 1.0 - (float)tbInx / layerCount );
+        float heightFac = XMScalarSin( (1.0 - 2.0 * tbInx / layerCount ) * PI/2.0 );
+        float cosUp = sqrt( 1.0 - heightFac * heightFac );
+        float z = heightFac;
+        for ( int i = 0; i <= circCnt_2; i ++ )
+        {
+            float u = (float)i / (float)circCnt_2;
+            float angle = PI * u;
+            float x = XMScalarCos( angle ) * cosUp;
+            float y = XMScalarSin( angle ) * cosUp;
+            verticesOutput.push_back( x * radius);
+            verticesOutput.push_back(y * radius);
+            verticesOutput.push_back(z * radius);
+
+            verticesOutput.push_back(x);
+            verticesOutput.push_back(y);
+            verticesOutput.push_back(z);
+
+            verticesOutput.push_back(u);
+            verticesOutput.push_back(v);
+
+            verticesOutput.push_back(colorGenerator(gen));
+            verticesOutput.push_back(colorGenerator(gen));
+            verticesOutput.push_back(colorGenerator(gen));
+            verticesOutput.push_back(colorGenerator(gen));
+        }
+        for ( int i = 0; i <= circCnt_2; i ++ )
+        {
+            float u = (float)i / (float)circCnt_2;
+            float angle = PI * u + PI;
+            float x = XMScalarCos( angle ) * cosUp;
+            float y = XMScalarSin( angle ) * cosUp;
+            verticesOutput.push_back( x * radius);
+            verticesOutput.push_back(y * radius);
+            verticesOutput.push_back(z * radius);
+
+            verticesOutput.push_back(x);
+            verticesOutput.push_back(y);
+            verticesOutput.push_back(z);
+
+            verticesOutput.push_back(u);
+            verticesOutput.push_back(v);
+
+            verticesOutput.push_back(colorGenerator(gen));
+            verticesOutput.push_back(colorGenerator(gen));
+            verticesOutput.push_back(colorGenerator(gen));
+            verticesOutput.push_back(colorGenerator(gen));
+        }
+    }
+
+    uint32_t circSize_2 = circCnt_2 + 1;
+    uint32_t circSize = circSize_2 * 2;
+    for ( uint32_t i = 0; i < circCnt_2; i ++  )
+    {
+        indicesOutput.push_back(circSize + i);
+        indicesOutput.push_back(circSize + i + 1);
+        indicesOutput.push_back(i);
+    }
+    for ( uint32_t i = circCnt_2+1; i < 2*circCnt_2+1; i ++ ){
+        indicesOutput.push_back(circSize + i);
+        indicesOutput.push_back(circSize + i + 1);
+        indicesOutput.push_back(i);
+    }
+
+    for ( uint32_t tbInx = 1; tbInx < layerCount - 1; tbInx ++ )
+    {
+        uint32_t ringStart = tbInx * circSize;
+        uint32_t nextRingStart = (tbInx+1) * circSize;
+        for ( int i = 0; i < circCnt_2; i ++ )
+        {
+            indicesOutput.push_back(ringStart + i);
+            indicesOutput.push_back(nextRingStart + i);
+            indicesOutput.push_back(nextRingStart + i + 1);
+
+            indicesOutput.push_back(ringStart+i);
+            indicesOutput.push_back(nextRingStart + i + 1);
+            indicesOutput.push_back(ringStart + i + 1 );
+        }
+        ringStart += circSize_2;
+        nextRingStart += circSize_2;
+        for ( uint32_t i = 0; i < circCnt_2; i ++ )
+        {
+            indicesOutput.push_back(ringStart + i);
+            indicesOutput.push_back(nextRingStart + i);
+            indicesOutput.push_back(nextRingStart + i + 1);
+
+            indicesOutput.push_back(ringStart+i);
+            indicesOutput.push_back(nextRingStart + i + 1);
+            indicesOutput.push_back(ringStart + i + 1 );
+        }
+    }
+    int start = (layerCount-1) * circSize;
+    for ( int i = 0; i < circCnt_2; i ++ )
+    {
+        indicesOutput.push_back(start+i+1);
+        indicesOutput.push_back(start + i);
+        indicesOutput.push_back(start + i + circSize);
+    }
+    for ( int i = circCnt_2+1; i < 2*circCnt_2+1; i ++ )
+    {
+        indicesOutput.push_back(start+i+1);
+        indicesOutput.push_back(start + i);
+        indicesOutput.push_back(start + i + circSize);
+    }
 }
 
 void Renderer::drawGui()
@@ -222,7 +312,7 @@ void Renderer::drawGui()
 void Renderer::loadConstants()
 {
     ZeroMemory(&shaderConstant, sizeof(ShaderConstant));
-    shaderConstant.worldMatrix = DirectX::XMMatrixIdentity();
+    shaderConstant.worldMatrix = DirectX::XMMatrixIdentity()*XMMatrixScaling(0.1, 0.1, 0.1);
     constantBuffer = new ConstantBuffer(device.getDevice(), &shaderConstant, sizeof(ShaderConstant),
                                         "Camera and mesh transform matrices");
 
