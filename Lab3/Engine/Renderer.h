@@ -66,7 +66,7 @@ private:
     IndexBuffer* sphereIndex = nullptr;
     Camera camera;
     ID3DUserDefinedAnnotation* annotation;
-
+    std::map<void*, size_t> cubeMapData;
 public:
     void drawFrame();
     void release();
@@ -81,4 +81,5 @@ private:
     void loadSphere();
     void loadConstants();
     void loadImgui();
+    void loadCubeMap();
 };

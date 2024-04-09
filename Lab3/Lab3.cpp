@@ -15,18 +15,14 @@ public:
     }
 };
 
+
+
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     PSTR lpCmdLine, int nCmdShow)
 {
-    LoadLibrary(L"ktx.dll");
-    ktxTexture* kTexture;
-    KTX_error_code res = ktxTexture_CreateFromNamedFile("bluecloude.ktx2",
-                                       KTX_TEXTURE_CREATE_NO_FLAGS,
-                                       &kTexture);
-    if(res!=KTX_SUCCESS)
-    {
-        throw std::runtime_error("Failed to load image");
-    }
+    
+   
+   
     auto window = Window::createWindow(hInstance, 1920, 1080, L"Lab3");
     Renderer renderer(window);
     while (!window->isNeedToClose()) {

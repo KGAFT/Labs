@@ -6,6 +6,7 @@
 #include "../ImGUI/imgui.h"
 #include "../ImGUI/imgui_impl_dx11.h"
 #include "../ImGUI/imgui_impl_win32.h"
+#include <ktx.h>
 
 #define PI 3.14159265359
 
@@ -58,6 +59,7 @@ Renderer::Renderer(Window* window) : engineWindow(window)
         throw std::runtime_error("Failed to create sampler");
     }
     loadImgui();
+    loadCubeMap();
 }
 
 void Renderer::drawFrame()
@@ -363,4 +365,25 @@ void Renderer::loadImgui()
     {
         throw std::runtime_error("Failed to initialize imgui");
     }
+}
+
+KTX_error_code textureCallback(int miplevel, int face, int width, int height, int depth, ktx_uint64_t faceLodSize, void *pixels, void *userdata)
+{
+    std::map<void*, size_t>* target = (std::map<void*, size_t>*) userdata;
+    (*target)[pixels] = faceLodSize;
+    return KTX_SUCCESS;
+}
+
+void Renderer::loadCubeMap()
+{
+    ktxTexture* texture;
+    KTX_error_code res = ktxTexture_CreateFromNamedFile("Images/bluecloud.ktx2",
+                                      KTX_TEXTURE_CREATE_NO_FLAGS,
+                                      &texture);
+    if(res!=KTX_SUCCESS)
+    {
+        throw std::runtime_error("Failed to load image");
+    }
+    ktxTexture_IterateLoadLevelFaces(texture, textureCallback, &cubeMapData);
+    
 }
