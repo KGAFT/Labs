@@ -28,6 +28,7 @@ Renderer::Renderer(Window* window) : engineWindow(window)
     window->addResizeCallback(resizeCallback);
     window->getInputSystem()->addKeyCallback(&camera);
     window->getInputSystem()->addMouseCallback(&camera);
+    window->getInputSystem()->addKeyCallback(this);
     loadShader();
     loadSphere();
     loadConstants();
@@ -115,7 +116,7 @@ void Renderer::loadSphere()
 
     std::vector<float> vertices;
     std::vector<uint32_t> indices;
-    makeSphere(vertices, indices, 25, 52, 52);
+    makeSphere(vertices, indices, 25, 52, 52, true);
     sphereVertex = shader->createVertexBuffer(device.getDevice(), vertices.size()*sizeof(float), 12 * sizeof(float), vertices.data(),
                                             "Sphere vertex buffer");
     sphereIndex = shader->createIndexBuffer(device.getDevice(), indices.data(), indices.size(),
@@ -134,8 +135,8 @@ void Renderer::release()
 void Renderer::keyEvent(WindowKey key)
 {
     uint32_t index = key.key - DIK_F1;
-    lightConstantData.sources[index].intensity *= 10;
-    if (lightConstantData.sources[index].intensity > 100)
+    lightConstantData.sources[index].intensity *= 100;
+    if (lightConstantData.sources[index].intensity > 1000000)
     {
         lightConstantData.sources[index].intensity = 1;
     }
@@ -147,7 +148,8 @@ WindowKey* Renderer::getKeys(uint32_t* pKeysAmountOut)
     return keys.data();
 }
 
-void Renderer::makeSphere(std::vector<float>& verticesOutput, std::vector<uint32_t>& indicesOutput, float radius, uint32_t layerTile, uint32_t circumferenceTile)
+void Renderer::makeSphere(std::vector<float>& verticesOutput, std::vector<uint32_t>& indicesOutput, float radius, uint32_t layerTile, uint32_t circumferenceTile,
+                          bool generateColors)
 {
     
     uint32_t circCnt = (int)( circumferenceTile + 0.5f );
@@ -182,11 +184,14 @@ void Renderer::makeSphere(std::vector<float>& verticesOutput, std::vector<uint32
 
             verticesOutput.push_back(u);
             verticesOutput.push_back(v);
-
-            verticesOutput.push_back(colorGenerator(gen));
-            verticesOutput.push_back(colorGenerator(gen));
-            verticesOutput.push_back(colorGenerator(gen));
-            verticesOutput.push_back(colorGenerator(gen));
+            if(generateColors)
+            {
+                verticesOutput.push_back(colorGenerator(gen));
+                verticesOutput.push_back(colorGenerator(gen));
+                verticesOutput.push_back(colorGenerator(gen));
+                verticesOutput.push_back(colorGenerator(gen));
+            }
+           
         }
         for ( int i = 0; i <= circCnt_2; i ++ )
         {
@@ -204,11 +209,13 @@ void Renderer::makeSphere(std::vector<float>& verticesOutput, std::vector<uint32
 
             verticesOutput.push_back(u);
             verticesOutput.push_back(v);
-
-            verticesOutput.push_back(colorGenerator(gen));
-            verticesOutput.push_back(colorGenerator(gen));
-            verticesOutput.push_back(colorGenerator(gen));
-            verticesOutput.push_back(colorGenerator(gen));
+            if(generateColors)
+            {
+                verticesOutput.push_back(colorGenerator(gen));
+                verticesOutput.push_back(colorGenerator(gen));
+                verticesOutput.push_back(colorGenerator(gen));
+                verticesOutput.push_back(colorGenerator(gen));
+            }
         }
     }
 
@@ -275,7 +282,7 @@ void Renderer::drawGui()
     ImGui::NewFrame();
     ImGui::Begin("PBR configuration: ");
     ImGui::Text("Light pbr configuration: ");
-    ImGui::SliderFloat("Ambient intensity", &configuration.ambientIntensity, 0, 1);
+    ImGui::SliderFloat("Ambient intensity", &configuration.ambientIntensity, 0, 50);
 
     static int currentItem = 0;
     if(ImGui::Combo("Mode", &currentItem, "default\0normal distribution\0geometry function\0fresnel function"))
@@ -304,7 +311,20 @@ void Renderer::drawGui()
     ImGui::Text("Mesh configuration");
     ImGui::SliderFloat("Metallic value", &configuration.metallic, 0, 1);
     ImGui::SliderFloat("Roughness value", &configuration.roughness, 0, 1);
-
+    ImGui::Text("Lights configuration");
+    float lightsPosition[3][3];
+    for (uint32_t i = 0; i<3;i++)
+    {
+        lightsPosition[i][0] = lightConstantData.sources[i].position.x;
+        lightsPosition[i][1] = lightConstantData.sources[i].position.y;
+        lightsPosition[i][2] = lightConstantData.sources[i].position.z;
+    }
+    ImGui::DragFloat3("Light 1 position", lightsPosition[0]);
+    ImGui::SliderFloat("Light 1 intensity", &lightConstantData.sources[0].intensity, 0, 10000);
+    ImGui::DragFloat3("Light 2 position", lightsPosition[1]);
+    ImGui::SliderFloat("Light 2 intensity", &lightConstantData.sources[1].intensity, 0, 10000);
+    ImGui::DragFloat3("Light 3 position", lightsPosition[2]);
+    ImGui::SliderFloat("Light 3 intensity", &lightConstantData.sources[2].intensity, 0, 10000);
     ImGui::End();
 }
 

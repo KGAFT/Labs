@@ -16,7 +16,7 @@ struct PBRConfiguration
 
     float metallic = 1.0;
     float roughness = 0.0;
-    float ambientIntensity = 0.3f;
+    float ambientIntensity = 3.0f;
     float alignment;
 };
 
@@ -72,7 +72,9 @@ public:
     void release();
     void keyEvent(WindowKey key) override;
     WindowKey* getKeys(uint32_t* pKeysAmountOut) override;
-    void makeSphere(std::vector<float>& verticesOutput, std::vector<uint32_t>& indicesOutput, float radius, uint32_t layerTile, uint32_t circumferenceTile);
+    void makeSphere(std::vector<float>& verticesOutput, std::vector<uint32_t>& indicesOutput, float radius,
+                    uint32_t layerTile, uint32_t circumferenceTile, bool generateColors);
+
 private:
     void drawGui();
     void loadShader();
