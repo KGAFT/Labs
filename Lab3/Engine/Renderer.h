@@ -27,6 +27,15 @@ struct ShaderConstant
     XMMATRIX cameraMatrix;
 };
 
+struct SkyboxConfig
+{
+    XMMATRIX worldMatrix;
+    XMMATRIX cameraMatrix;
+    XMFLOAT4 size;
+    XMFLOAT3 cameraPosition;
+
+};
+
 struct PointLightSource
 {
     XMFLOAT3 position;
@@ -54,19 +63,26 @@ private:
     DXDevice device;
     std::vector<WindowKey> keys;
     Shader* shader;
+    Shader* cubeMapShader;
     ShaderConstant shaderConstant{};
     alignas(256) LightConstant lightConstantData{};
     PBRConfiguration configuration;
+    SkyboxConfig skyboxConfig{};
     ConstantBuffer* constantBuffer;
     ConstantBuffer* lightConstant;
     ConstantBuffer* pbrConfiguration;
+    ConstantBuffer* skyboxConfigConstant;
     ToneMapper* toneMapper;
     ID3D11SamplerState* sampler;
     VertexBuffer* sphereVertex = nullptr;
     IndexBuffer* sphereIndex = nullptr;
     Camera camera;
     ID3DUserDefinedAnnotation* annotation;
-    std::map<void*, size_t> cubeMapData;
+    ID3D11Resource* cubeMapTexture;
+    ID3D11ShaderResourceView* cubeMapTextureResourceView;
+
+    ID3D11DepthStencilState* depthState;
+    ID3D11RasterizerState* rasterState;
 public:
     void drawFrame();
     void release();

@@ -6,7 +6,9 @@
 #include "../ImGUI/imgui.h"
 #include "../ImGUI/imgui_impl_dx11.h"
 #include "../ImGUI/imgui_impl_win32.h"
-#include <ktx.h>
+#include <DDSTextureLoader.h>
+
+#include "../Utils/FileSystemUtils.h"
 
 #define PI 3.14159265359
 
@@ -58,8 +60,37 @@ Renderer::Renderer(Window* window) : engineWindow(window)
     {
         throw std::runtime_error("Failed to create sampler");
     }
+    D3D11_RASTERIZER_DESC cmdesc = {};
+    ZeroMemory(&cmdesc, sizeof(D3D11_RASTERIZER_DESC));
+    cmdesc.FillMode = D3D11_FILL_SOLID;
+    cmdesc.CullMode = D3D11_CULL_NONE;
+    cmdesc.FrontCounterClockwise = true;
+    if(FAILED(device.getDevice()->CreateRasterizerState(&cmdesc, &rasterState)))
+    {
+        throw std::runtime_error("Failed to create raster state");
+    }
+
+    D3D11_DEPTH_STENCIL_DESC dssDesc;
+    ZeroMemory(&dssDesc, sizeof(D3D11_DEPTH_STENCIL_DESC));
+    dssDesc.DepthEnable = true;
+    dssDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+    dssDesc.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;
+
+    if(FAILED(device.getDevice()->CreateDepthStencilState(&dssDesc, &depthState)))
+    {
+        throw std::runtime_error("Failed to create depth state");
+    }
     loadImgui();
     loadCubeMap();
+}
+
+void calcSkyboxSize(SkyboxConfig& config, uint32_t width, uint32_t height, float fovDeg)
+{
+    float n = 0.01f;
+    float fov = XMConvertToRadians(fovDeg);
+    float halfW = tanf(fov / 2) * n;
+    float halfH = height / float(width) * halfW;
+    config.size.x = sqrtf(n * n + halfH * halfH + halfW * halfW) * 1.1f;
 }
 
 void Renderer::drawFrame()
@@ -71,16 +102,29 @@ void Renderer::drawFrame()
                                                              (float)engineWindow->getWidth() / (float)engineWindow->
                                                              getHeight(), 0.001f, 2000.0f);
     shaderConstant.cameraMatrix = XMMatrixMultiply(shaderConstant.cameraMatrix, mProjection);
+    skyboxConfig.cameraMatrix = shaderConstant.cameraMatrix;
+    skyboxConfig.worldMatrix = shaderConstant.worldMatrix;
+    skyboxConfig.cameraPosition = camera.getPosition();
+    calcSkyboxSize(skyboxConfig, engineWindow->getWidth(), engineWindow->getHeight(), 90);
     
     lightConstantData.cameraPosition = camera.getPosition();
     constantBuffer->updateData(device.getDeviceContext(), &shaderConstant);
     lightConstant->updateData(device.getDeviceContext(), &lightConstantData);
     pbrConfiguration->updateData(device.getDeviceContext(), &configuration);
+    skyboxConfigConstant->updateData(device.getDeviceContext(), &skyboxConfig);
     toneMapper->clearRenderTarget(device.getDeviceContext(), swapChain->getCurrentImage());
 
-    shader->bind(device.getDeviceContext());
     toneMapper->getRendertargetView()->bind(device.getDeviceContext(), engineWindow->getWidth(),
                                             engineWindow->getHeight(), swapChain->getCurrentImage());
+    cubeMapShader->bind(device.getDeviceContext());
+    device.getDeviceContext()->PSSetSamplers(0, 1, &sampler);
+    skyboxConfigConstant->bindToVertexShader(device.getDeviceContext());
+    device.getDeviceContext()->PSSetShaderResources(0, 1, &cubeMapTextureResourceView);
+    device.getDeviceContext()->OMSetDepthStencilState(depthState, 1);
+    device.getDeviceContext()->RSSetState(rasterState);
+    cubeMapShader->draw(device.getDeviceContext(), sphereIndex, sphereVertex);
+    
+    shader->bind(device.getDeviceContext());
     constantBuffer->bindToVertexShader(device.getDeviceContext());
     lightConstant->bindToPixelShader(device.getDeviceContext());
     pbrConfiguration->bindToPixelShader(device.getDeviceContext(), 1);
@@ -98,6 +142,8 @@ void Renderer::drawFrame()
     swapChain->present(true);
 }
 
+
+
 void Renderer::loadShader()
 {
     std::vector<ShaderCreateInfo> shadersInfos;
@@ -111,6 +157,13 @@ void Renderer::loadShader()
     vertexInputs.push_back({"COLOR", 0, sizeof(float) * 4, DXGI_FORMAT_R32G32B32A32_FLOAT});
 
     shader->makeInputLayout(vertexInputs.data(), (uint32_t)vertexInputs.size());
+
+
+    shadersInfos.clear();
+    shadersInfos.push_back({L"Shaders/skyboxVS.hlsl", VERTEX_SHADER, "Lab3 skybox vertex shader"});
+    shadersInfos.push_back({L"Shaders/skyboxPS.hlsl", PIXEL_SHADER, "Lab3 skybox pixel shader"});
+    cubeMapShader = Shader::loadShader(device.getDevice(), shadersInfos.data(), shadersInfos.size());;
+    cubeMapShader->makeInputLayout(vertexInputs.data(), vertexInputs.size());
 }
 
 void Renderer::loadSphere()
@@ -347,6 +400,7 @@ void Renderer::loadConstants()
 
     pbrConfiguration = new ConstantBuffer(device.getDevice(), &pbrConfiguration, sizeof(PBRConfiguration),
                                           "PBR configuration buffer");
+    skyboxConfigConstant = new ConstantBuffer(device.getDevice(), &skyboxConfig, sizeof(SkyboxConfig), "Skybox configuration");
 }
 
 void Renderer::loadImgui()
@@ -367,23 +421,15 @@ void Renderer::loadImgui()
     }
 }
 
-KTX_error_code textureCallback(int miplevel, int face, int width, int height, int depth, ktx_uint64_t faceLodSize, void *pixels, void *userdata)
-{
-    std::map<void*, size_t>* target = (std::map<void*, size_t>*) userdata;
-    (*target)[pixels] = faceLodSize;
-    return KTX_SUCCESS;
-}
+
 
 void Renderer::loadCubeMap()
 {
-    ktxTexture* texture;
-    KTX_error_code res = ktxTexture_CreateFromNamedFile("Images/bluecloud.ktx2",
-                                      KTX_TEXTURE_CREATE_NO_FLAGS,
-                                      &texture);
-    if(res!=KTX_SUCCESS)
+    auto workDir = FileSystemUtils::getCurrentDirectoryPath();
+    workDir+=L"skybox.dds";
+    HRESULT res = CreateDDSTextureFromFile(device.getDevice(), device.getDeviceContext(), workDir.c_str(), &cubeMapTexture, &cubeMapTextureResourceView);
+    if(FAILED(res))
     {
-        throw std::runtime_error("Failed to load image");
+        throw std::runtime_error("Failed to load texture from file");
     }
-    ktxTexture_IterateLoadLevelFaces(texture, textureCallback, &cubeMapData);
-    
 }

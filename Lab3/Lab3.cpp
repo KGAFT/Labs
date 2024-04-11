@@ -1,7 +1,6 @@
 #include "Window/Window.h"
 #include "Engine/Renderer.h"
 #include <iostream>
-#include <ktx.h>
 
 class TestMouseCB : public IWindowMouseCallback {
 public:

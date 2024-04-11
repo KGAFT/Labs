@@ -1,4 +1,4 @@
-﻿TextureCube cubeMap : register (t0);
+TextureCube cubeMap : register (t0);
 SamplerState cubeMapSampler : register (s0);
 
 struct PS_INPUT
