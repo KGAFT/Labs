@@ -65,7 +65,11 @@ Renderer::Renderer(Window* window) : engineWindow(window)
     cmdesc.FillMode = D3D11_FILL_SOLID;
     cmdesc.CullMode = D3D11_CULL_NONE;
     cmdesc.FrontCounterClockwise = true;
-    if(FAILED(device.getDevice()->CreateRasterizerState(&cmdesc, &rasterState)))
+    uint32_t stencRef = 0;
+    device.getDeviceContext()->RSGetState(&defaultRasterState);
+    device.getDeviceContext()->OMGetDepthStencilState(&defaultDepthState, &stencRef);
+    
+    if(FAILED(device.getDevice()->CreateRasterizerState(&cmdesc, &skyboxRasterState)))
     {
         throw std::runtime_error("Failed to create raster state");
     }
@@ -76,7 +80,7 @@ Renderer::Renderer(Window* window) : engineWindow(window)
     dssDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
     dssDesc.DepthFunc = D3D11_COMPARISON_LESS_EQUAL;
 
-    if(FAILED(device.getDevice()->CreateDepthStencilState(&dssDesc, &depthState)))
+    if(FAILED(device.getDevice()->CreateDepthStencilState(&dssDesc, &skyboxDepthState)))
     {
         throw std::runtime_error("Failed to create depth state");
     }
@@ -103,7 +107,6 @@ void Renderer::drawFrame()
                                                              getHeight(), 0.001f, 2000.0f);
     shaderConstant.cameraMatrix = XMMatrixMultiply(shaderConstant.cameraMatrix, mProjection);
     skyboxConfig.cameraMatrix = shaderConstant.cameraMatrix;
-    skyboxConfig.worldMatrix = shaderConstant.worldMatrix;
     skyboxConfig.cameraPosition = camera.getPosition();
     calcSkyboxSize(skyboxConfig, engineWindow->getWidth(), engineWindow->getHeight(), 90);
     
@@ -120,14 +123,18 @@ void Renderer::drawFrame()
     device.getDeviceContext()->PSSetSamplers(0, 1, &sampler);
     skyboxConfigConstant->bindToVertexShader(device.getDeviceContext());
     device.getDeviceContext()->PSSetShaderResources(0, 1, &cubeMapTextureResourceView);
-    device.getDeviceContext()->OMSetDepthStencilState(depthState, 1);
-    device.getDeviceContext()->RSSetState(rasterState);
+    device.getDeviceContext()->OMSetDepthStencilState(skyboxDepthState, 1);
+    device.getDeviceContext()->RSSetState(skyboxRasterState);
     cubeMapShader->draw(device.getDeviceContext(), sphereIndex, sphereVertex);
+    
+    toneMapper->getRendertargetView()->clearDepthAttachments(device.getDeviceContext());
     
     shader->bind(device.getDeviceContext());
     constantBuffer->bindToVertexShader(device.getDeviceContext());
     lightConstant->bindToPixelShader(device.getDeviceContext());
     pbrConfiguration->bindToPixelShader(device.getDeviceContext(), 1);
+    device.getDeviceContext()->OMSetDepthStencilState(defaultDepthState, 1);
+    device.getDeviceContext()->RSSetState(defaultRasterState);
     shader->draw(device.getDeviceContext(), sphereIndex, sphereVertex);
 
     toneMapper->makeBrightnessMaps(device.getDeviceContext(), swapChain->getCurrentImage());
@@ -400,6 +407,7 @@ void Renderer::loadConstants()
 
     pbrConfiguration = new ConstantBuffer(device.getDevice(), &pbrConfiguration, sizeof(PBRConfiguration),
                                           "PBR configuration buffer");
+    skyboxConfig.worldMatrix = DirectX::XMMatrixIdentity();
     skyboxConfigConstant = new ConstantBuffer(device.getDevice(), &skyboxConfig, sizeof(SkyboxConfig), "Skybox configuration");
 }
 

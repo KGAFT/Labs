@@ -81,8 +81,11 @@ private:
     ID3D11Resource* cubeMapTexture;
     ID3D11ShaderResourceView* cubeMapTextureResourceView;
 
-    ID3D11DepthStencilState* depthState;
-    ID3D11RasterizerState* rasterState;
+    ID3D11DepthStencilState* skyboxDepthState;
+    ID3D11RasterizerState* skyboxRasterState;
+
+    ID3D11DepthStencilState* defaultDepthState;
+    ID3D11RasterizerState* defaultRasterState;
 public:
     void drawFrame();
     void release();

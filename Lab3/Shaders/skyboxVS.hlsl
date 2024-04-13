@@ -24,10 +24,9 @@ cbuffer TransformData: register(b0)
 
 VS_OUTPUT main(VS_INPUT vsInput)
 {
-    VS_OUTPUT output;
-
+    VS_OUTPUT output = (VS_OUTPUT)0;
     float3 pos = cameraPosition.xyz + vsInput.position * size.x;
-    output.position = mul(cameraPosition, mul(worldMatrix, float4(pos, 1.0f)));
+    output.position = mul(cameraMatrix, mul(worldMatrix, float4(pos, 1.0f)));
     output.position.z =  0.0f;
     output.uv = vsInput.position;
     output.normal = vsInput.normal;
