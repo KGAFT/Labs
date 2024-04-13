@@ -130,6 +130,9 @@ void Renderer::drawFrame()
     toneMapper->getRendertargetView()->clearDepthAttachments(device.getDeviceContext());
     
     shader->bind(device.getDeviceContext());
+    device.getDeviceContext()->PSSetSamplers(0, 1, &sampler);
+    device.getDeviceContext()->PSSetShaderResources(0, 1, &cubeMapTextureResourceView);
+    
     constantBuffer->bindToVertexShader(device.getDeviceContext());
     lightConstant->bindToPixelShader(device.getDeviceContext());
     pbrConfiguration->bindToPixelShader(device.getDeviceContext(), 1);
@@ -178,7 +181,8 @@ void Renderer::loadSphere()
 
     std::vector<float> vertices;
     std::vector<uint32_t> indices;
-    makeSphere(vertices, indices, 25, 52, 52, true);
+    float color[]={0.62745, 0.08235, 0.24313, 1.0f};
+    makeSphere(vertices, indices, 25, 52, 52, color, false);
     sphereVertex = shader->createVertexBuffer(device.getDevice(), vertices.size()*sizeof(float), 12 * sizeof(float), vertices.data(),
                                             "Sphere vertex buffer");
     sphereIndex = shader->createIndexBuffer(device.getDevice(), indices.data(), indices.size(),
@@ -210,7 +214,7 @@ WindowKey* Renderer::getKeys(uint32_t* pKeysAmountOut)
     return keys.data();
 }
 
-void Renderer::makeSphere(std::vector<float>& verticesOutput, std::vector<uint32_t>& indicesOutput, float radius, uint32_t layerTile, uint32_t circumferenceTile,
+void Renderer::makeSphere(std::vector<float>& verticesOutput, std::vector<uint32_t>& indicesOutput, float radius, uint32_t layerTile, uint32_t circumferenceTile, float* defaultColor,
                           bool generateColors)
 {
     
@@ -253,6 +257,13 @@ void Renderer::makeSphere(std::vector<float>& verticesOutput, std::vector<uint32
                 verticesOutput.push_back(colorGenerator(gen));
                 verticesOutput.push_back(colorGenerator(gen));
             }
+            if(!generateColors && defaultColor)
+            {
+                verticesOutput.push_back(defaultColor[0]);
+                verticesOutput.push_back(defaultColor[1]);
+                verticesOutput.push_back(defaultColor[2]);
+                verticesOutput.push_back(defaultColor[3]);
+            }
            
         }
         for ( int i = 0; i <= circCnt_2; i ++ )
@@ -277,6 +288,13 @@ void Renderer::makeSphere(std::vector<float>& verticesOutput, std::vector<uint32
                 verticesOutput.push_back(colorGenerator(gen));
                 verticesOutput.push_back(colorGenerator(gen));
                 verticesOutput.push_back(colorGenerator(gen));
+            }
+            if(!generateColors && defaultColor)
+            {
+                verticesOutput.push_back(defaultColor[0]);
+                verticesOutput.push_back(defaultColor[1]);
+                verticesOutput.push_back(defaultColor[2]);
+                verticesOutput.push_back(defaultColor[3]);
             }
         }
     }
@@ -434,7 +452,7 @@ void Renderer::loadImgui()
 void Renderer::loadCubeMap()
 {
     auto workDir = FileSystemUtils::getCurrentDirectoryPath();
-    workDir+=L"skybox.dds";
+    workDir+=L"BrightSky.dds";
     HRESULT res = CreateDDSTextureFromFile(device.getDevice(), device.getDeviceContext(), workDir.c_str(), &cubeMapTexture, &cubeMapTextureResourceView);
     if(FAILED(res))
     {

@@ -92,7 +92,7 @@ public:
     void keyEvent(WindowKey key) override;
     WindowKey* getKeys(uint32_t* pKeysAmountOut) override;
     void makeSphere(std::vector<float>& verticesOutput, std::vector<uint32_t>& indicesOutput, float radius,
-                    uint32_t layerTile, uint32_t circumferenceTile, bool generateColors);
+                    uint32_t layerTile, uint32_t circumferenceTile,float* defaultColor, bool generateColors);
 
 private:
     void drawGui();

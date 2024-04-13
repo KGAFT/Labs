@@ -9,5 +9,5 @@ struct PS_INPUT
 };
 
 float4 main(PS_INPUT input) : SV_TARGET {
-    return float4(cubeMap.Sample(cubeMapSampler, input.uv).xyz, 1.0f)*100;
+    return float4(cubeMap.Sample(cubeMapSampler, input.uv).xyz, 1.0f);
 }
