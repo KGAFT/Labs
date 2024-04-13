@@ -4,7 +4,7 @@ struct VS_INPUT
     float3 position: POSITION;
     float2 uv: UV;
     float3 normal: NORMAL;
-    float4 color: COLOR;
+    float3 color: COLOR;
 };
 
 struct VS_OUTPUT
@@ -12,7 +12,7 @@ struct VS_OUTPUT
     float4 position: SV_POSITION;
     float3 normal: NORMAL;
     float2 uv: UV;
-    float4 color: COLOR;
+    float3 color: COLOR;
 };
 
 cbuffer TransformData: register(b0)

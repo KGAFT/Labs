@@ -3,7 +3,7 @@ struct VS_INPUT
     float3 position: POSITION;
     float2 uv: UV;
     float3 normal: NORMAL;
-    float4 color: COLOR;
+    float3 color: COLOR;
 };
 
 struct VS_OUTPUT

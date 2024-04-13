@@ -3,7 +3,7 @@ struct PixelShaderInput
     float4 position: SV_POSITION;
     float3 normal: NORMAL;
     float2 uv: UV;
-    float4 color: COLOR;
+    float3 color: COLOR;
 };
 
 struct PointLight
@@ -39,12 +39,16 @@ static const float PI = 3.14159265359;
 
 float distributeGGX(float3 normals, float3 halfWayVector, float roughness)
 {
-    float roughness4 = roughness * roughness * roughness * roughness;
-    float halwayDot2 = max(dot(normals, halfWayVector), 0.0) * max(dot(normals, halfWayVector), 0.0);
-    float numerator = roughness4;
-    float denominator = (halwayDot2 * (roughness4 - 1.0) + 1.0);
-    denominator = PI * denominator * denominator;
-    return numerator / denominator;
+    float a = roughness * roughness;
+    float a2 = a * a;
+    float NdotH = max(dot(normals, halfWayVector), 0.0);
+    float NdotH2 = NdotH * NdotH;
+
+    float nom = a2;
+    float denom = (NdotH2 * (a2 - 1.0) + 1.0);
+    denom = PI * denom * denom;
+
+    return nom / denom;
 }
 
 float schlickGeometryGGX(float dotWorldViewVector, float roughness)
@@ -81,18 +85,18 @@ float3 processPointLight(PointLight light, float3 normals, float3 fragmentPositi
     float3 processedLightPos = normalize(light.position - fragmentPosition);
     float3 halfWay = normalize(worldViewVector + processedLightPos);
     float distance = length(light.position - fragmentPosition);
-    float attenuation = clamp(1.0 / (distance * distance), 0, 1.0f);
-    float3 radiance = float3(1, 1, 1) * light.intensity * attenuation;
+    float attenuation = clamp(1.0 / (distance * distance), 0.01, 1.0f);
+    float3 radiance = float3(1, 1, 1)* light.intensity *attenuation;
 
     float halfWayGGX = distributeGGX(normals, halfWay, roughness);
     float geometrySmith = smithGeometry(normals, worldViewVector, processedLightPos, roughness);
-    float3 fresnelSchlick = fresnelSchlickBase(clamp(dot(halfWay, worldViewVector), 0.0, 1.0), startFresnelSchlick);
+    float3 fresnelSchlick = fresnelSchlickBase(max(dot(halfWay, worldViewVector), 0.0), startFresnelSchlick);
 
     float3 numerator = float3(0, 0, 0);
     float denominator = 1;
     if (defaultFunction)
     {
-        numerator = halfWayGGX * geometrySmith * fresnelSchlick;
+        numerator = halfWayGGX*geometrySmith * fresnelSchlick;
         denominator = 4.0 * max(dot(normals, worldViewVector), 0.0) * max(dot(normals, processedLightPos), 0.0) +
             0.0001;
     }
@@ -117,15 +121,16 @@ float3 processPointLight(PointLight light, float3 normals, float3 fragmentPositi
     float3 specular = numerator / denominator;
     if (defaultFunction)
     {
+       
         float3 finalFresnelSchlick = float3(1, 1, 1) - fresnelSchlick;
-        finalFresnelSchlick *= 1.0 - metallic;
+        finalFresnelSchlick *= 1.0 - metallic+0.0;
 
         float NdotL = max(dot(normals, processedLightPos), 0.0);
-        return (finalFresnelSchlick * albedo / PI + specular) * radiance * NdotL;
+        return (finalFresnelSchlick * albedo / PI + specular) * radiance * NdotL*light.intensity;
     }
     else
     {
-        return specular;
+        return specular * light.intensity;
     }
 }
 
@@ -143,7 +148,7 @@ float3 getReflection(float roughness, float3 reflectanceVec)
 
 float4 main(PixelShaderInput psInput) : SV_Target
 {
-    float3 normal = psInput.normal;
+    float3 normal = normalize(psInput.normal);
     //Extract to constant buffer
 
     //
@@ -160,8 +165,7 @@ float4 main(PixelShaderInput psInput) : SV_Target
     }
     float3 fresnelRoughness = fresnelSchlickRoughness(max(dot(normal, worldViewVector), 0.0), startFresnelSchlick,
                                                       roughness);
-    float3 specularContribution = reflection * fresnelRoughness * 0.025f;
-
+    float3 specularContribution = reflection * fresnelRoughness * 0.01f;
     float3 ambient = (float3(ambientIntensity, ambientIntensity, ambientIntensity) * psInput.color + fresnelRoughness +
         specularContribution);
     float3 color = ambient + Lo;
