@@ -197,16 +197,11 @@ void DXRenderTargetView::createShaderResourceViews(const char* name)
     descSRV.Texture2D.MostDetailedMip = 0;
     ID3D11ShaderResourceView* pResourceView;
     std::string finalName;
-    if (name)
-    {
-        std::string finalName = name;
-        finalName += " shader resource view";
-        depthAttachment->SetPrivateData(WKPDID_D3DDebugObjectName, finalName.length() * sizeof(char),
-                                        finalName.c_str());
-    }
+
 
     if (colorCreatedInside)
     {
+        uint32_t i = 0;
         for (auto colorAttachment : colorAttachments)
         {
             if (FAILED(device->CreateShaderResourceView(colorAttachment, &descSRV, &pResourceView)))
@@ -215,10 +210,13 @@ void DXRenderTargetView::createShaderResourceViews(const char* name)
             }
             if (finalName.length())
             {
+                finalName = name;
+                finalName+=" shader resource view "+i;
                 pResourceView->SetPrivateData(WKPDID_D3DDebugObjectName, finalName.length() * sizeof(char),
                                               finalName.c_str());
             }
             resourceViews.push_back(pResourceView);
+            i++;
         }
     }
 

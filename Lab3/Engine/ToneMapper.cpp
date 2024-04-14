@@ -113,6 +113,9 @@ void ToneMapper::resize(uint32_t width, uint32_t height)
 void ToneMapper::makeBrightnessMaps(ID3D11DeviceContext* deviceContext, uint32_t currentImage)
 {
 #ifdef _DEBUG
+    annotations->BeginEvent(L"HDR");
+#endif
+#ifdef _DEBUG
     annotations->EndEvent();
     annotations->BeginEvent(L"Rendering brightness maps");
 #endif
@@ -179,6 +182,7 @@ void ToneMapper::makeBrightnessMaps(ID3D11DeviceContext* deviceContext, uint32_t
 
 void ToneMapper::postProcessToneMap(ID3D11DeviceContext* deviceContext, uint32_t currentImage)
 {
+
 #ifdef _DEBUG
     annotations->BeginEvent(L"Tone mapping");
 #endif
@@ -246,9 +250,7 @@ DXRenderTargetView* ToneMapper::getRendertargetView()
 
 void ToneMapper::clearRenderTarget(ID3D11DeviceContext* deviceContext, uint32_t currentImage)
 {
-#ifdef _DEBUG
-    annotations->BeginEvent(L"HDR");
-#endif
+
 
     rtv->clearColorAttachments(deviceContext, 0.25f, 0.25f, 0.25f, 1.0f, currentImage);
     rtv->clearDepthAttachments(deviceContext);

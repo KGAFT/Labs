@@ -115,8 +115,19 @@ void Renderer::drawFrame()
     lightConstant->updateData(device.getDeviceContext(), &lightConstantData);
     pbrConfiguration->updateData(device.getDeviceContext(), &configuration);
     skyboxConfigConstant->updateData(device.getDeviceContext(), &skyboxConfig);
-    toneMapper->clearRenderTarget(device.getDeviceContext(), swapChain->getCurrentImage());
 
+#ifdef _DEBUG
+    annotation->BeginEvent(L"Clear render targets");
+#endif
+    
+    toneMapper->clearRenderTarget(device.getDeviceContext(), swapChain->getCurrentImage());
+#ifdef _DEBUG
+    annotation->EndEvent();
+    annotation->EndEvent();
+#endif
+#ifdef _DEBUG
+    annotation->BeginEvent(L"Rendering skybox");
+#endif
     toneMapper->getRendertargetView()->bind(device.getDeviceContext(), engineWindow->getWidth(),
                                             engineWindow->getHeight(), swapChain->getCurrentImage());
     cubeMapShader->bind(device.getDeviceContext());
@@ -128,7 +139,12 @@ void Renderer::drawFrame()
     cubeMapShader->draw(device.getDeviceContext(), sphereIndex, sphereVertex);
 
     toneMapper->getRendertargetView()->clearDepthAttachments(device.getDeviceContext());
-
+#ifdef _DEBUG
+    annotation->EndEvent();
+#endif
+#ifdef _DEBUG
+    annotation->BeginEvent(L"Rendering pbr light");
+#endif
     shader->bind(device.getDeviceContext());
     device.getDeviceContext()->PSSetSamplers(0, 1, &sampler);
     device.getDeviceContext()->PSSetShaderResources(0, 1, &cubeMapTextureResourceView);
@@ -139,7 +155,9 @@ void Renderer::drawFrame()
     device.getDeviceContext()->OMSetDepthStencilState(defaultDepthState, 1);
     device.getDeviceContext()->RSSetState(defaultRasterState);
     shader->draw(device.getDeviceContext(), sphereIndex, sphereVertex);
-
+#ifdef _DEBUG
+    annotation->EndEvent();
+#endif
     toneMapper->makeBrightnessMaps(device.getDeviceContext(), swapChain->getCurrentImage());
     swapChain->clearRenderTargets(device.getDeviceContext(), 0, 0, 0, 1.0f);
     device.getDeviceContext()->PSSetSamplers(0, 1, &sampler);
@@ -224,142 +242,7 @@ WindowKey* Renderer::getKeys(uint32_t* pKeysAmountOut)
     return keys.data();
 }
 
-void Renderer::makeSphere(std::vector<float>& verticesOutput, std::vector<uint32_t>& indicesOutput, float radius,
-                          uint32_t layerTile, uint32_t circumferenceTile, float* defaultColor,
-                          bool generateColors)
-{
-    uint32_t circCnt = (int)(circumferenceTile + 0.5f);
-    if (circCnt < 4) circCnt = 4;
-    uint32_t circCnt_2 = circCnt / 2;
-    uint32_t layerCount = (int)(layerTile + 0.5f);
-    if (layerCount < 2) layerCount = 2;
 
-
-    std::default_random_engine gen;
-    std::uniform_real_distribution<double> colorGenerator(0.0,
-                                                          1.0);
-    for (uint32_t tbInx = 0; tbInx <= layerCount; tbInx++)
-    {
-        float v = (1.0 - (float)tbInx / layerCount);
-        float heightFac = XMScalarSin((1.0 - 2.0 * tbInx / layerCount) * PI / 2.0);
-        float cosUp = sqrt(1.0 - heightFac * heightFac);
-        float z = heightFac;
-        for (int i = 0; i <= circCnt_2; i++)
-        {
-            float u = (float)i / (float)circCnt_2;
-            float angle = PI * u;
-            float x = XMScalarCos(angle) * cosUp;
-            float y = XMScalarSin(angle) * cosUp;
-            verticesOutput.push_back(x * radius);
-            verticesOutput.push_back(y * radius);
-            verticesOutput.push_back(z * radius);
-
-            verticesOutput.push_back(x);
-            verticesOutput.push_back(y);
-            verticesOutput.push_back(z);
-
-            verticesOutput.push_back(u);
-            verticesOutput.push_back(v);
-            if (generateColors)
-            {
-                verticesOutput.push_back(colorGenerator(gen));
-                verticesOutput.push_back(colorGenerator(gen));
-                verticesOutput.push_back(colorGenerator(gen));
-            }
-            if (!generateColors && defaultColor)
-            {
-                verticesOutput.push_back(defaultColor[0]);
-                verticesOutput.push_back(defaultColor[1]);
-                verticesOutput.push_back(defaultColor[2]);
-            }
-        }
-        for (int i = 0; i <= circCnt_2; i++)
-        {
-            float u = (float)i / (float)circCnt_2;
-            float angle = PI * u + PI;
-            float x = XMScalarCos(angle) * cosUp;
-            float y = XMScalarSin(angle) * cosUp;
-            verticesOutput.push_back(x * radius);
-            verticesOutput.push_back(y * radius);
-            verticesOutput.push_back(z * radius);
-
-            verticesOutput.push_back(x);
-            verticesOutput.push_back(y);
-            verticesOutput.push_back(z);
-
-            verticesOutput.push_back(u);
-            verticesOutput.push_back(v);
-            if (generateColors)
-            {
-                verticesOutput.push_back(colorGenerator(gen));
-                verticesOutput.push_back(colorGenerator(gen));
-                verticesOutput.push_back(colorGenerator(gen));
-            }
-            if (!generateColors && defaultColor)
-            {
-                verticesOutput.push_back(defaultColor[0]);
-                verticesOutput.push_back(defaultColor[1]);
-                verticesOutput.push_back(defaultColor[2]);
-            }
-        }
-    }
-
-    uint32_t circSize_2 = circCnt_2 + 1;
-    uint32_t circSize = circSize_2 * 2;
-    for (uint32_t i = 0; i < circCnt_2; i++)
-    {
-        indicesOutput.push_back(circSize + i);
-        indicesOutput.push_back(circSize + i + 1);
-        indicesOutput.push_back(i);
-    }
-    for (uint32_t i = circCnt_2 + 1; i < 2 * circCnt_2 + 1; i++)
-    {
-        indicesOutput.push_back(circSize + i);
-        indicesOutput.push_back(circSize + i + 1);
-        indicesOutput.push_back(i);
-    }
-
-    for (uint32_t tbInx = 1; tbInx < layerCount - 1; tbInx++)
-    {
-        uint32_t ringStart = tbInx * circSize;
-        uint32_t nextRingStart = (tbInx + 1) * circSize;
-        for (int i = 0; i < circCnt_2; i++)
-        {
-            indicesOutput.push_back(ringStart + i);
-            indicesOutput.push_back(nextRingStart + i);
-            indicesOutput.push_back(nextRingStart + i + 1);
-
-            indicesOutput.push_back(ringStart + i);
-            indicesOutput.push_back(nextRingStart + i + 1);
-            indicesOutput.push_back(ringStart + i + 1);
-        }
-        ringStart += circSize_2;
-        nextRingStart += circSize_2;
-        for (uint32_t i = 0; i < circCnt_2; i++)
-        {
-            indicesOutput.push_back(ringStart + i);
-            indicesOutput.push_back(nextRingStart + i);
-            indicesOutput.push_back(nextRingStart + i + 1);
-
-            indicesOutput.push_back(ringStart + i);
-            indicesOutput.push_back(nextRingStart + i + 1);
-            indicesOutput.push_back(ringStart + i + 1);
-        }
-    }
-    int start = (layerCount - 1) * circSize;
-    for (int i = 0; i < circCnt_2; i++)
-    {
-        indicesOutput.push_back(start + i + 1);
-        indicesOutput.push_back(start + i);
-        indicesOutput.push_back(start + i + circSize);
-    }
-    for (int i = circCnt_2 + 1; i < 2 * circCnt_2 + 1; i++)
-    {
-        indicesOutput.push_back(start + i + 1);
-        indicesOutput.push_back(start + i);
-        indicesOutput.push_back(start + i + circSize);
-    }
-}
 
 void Renderer::makeSphere2(std::vector<Vertex>& verticesOutput, std::vector<uint32_t>& indicesOutput, double radius,
                            double latitudeBands, double longitudeBands, float* defaultColor, bool generateColors)
