@@ -73,10 +73,10 @@ float3 fresnelSchlickBase(float cosTheta, float3 startFresnelSchlick)
     return startFresnelSchlick + (1.0 - startFresnelSchlick) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 
-float3 fresnelSchlickRoughness(float cosTheta, float3 startFresnelSchlick, float roughness)
+float3 fresnelFunctionMetal(float3 objColor, float3 startFresnelSchlick,  float3 h, in float3 worldViewVector, float metalllic)
 {
-    return startFresnelSchlick + (max(float3(1.0 - roughness, 1.0 - roughness, 1.0 - roughness), startFresnelSchlick) -
-        startFresnelSchlick) * pow(1.0 - cosTheta, 5.0);
+    float3 f = startFresnelSchlick * (1 - metalllic) + objColor * metalllic;
+    return f + (float3(1.0f, 1.0f, 1.0f) - f) * pow(1.0f - max(dot(h, worldViewVector), 0.0f), 5);
 }
 
 float3 processPointLight(PointLight light, float3 normals, float3 fragmentPosition, float3 worldViewVector,
@@ -90,7 +90,9 @@ float3 processPointLight(PointLight light, float3 normals, float3 fragmentPositi
 
     float halfWayGGX = distributeGGX(normals, halfWay, roughness);
     float geometrySmith = smithGeometry(normals, worldViewVector, processedLightPos, roughness);
-    float3 fresnelSchlick = fresnelSchlickBase(max(dot(halfWay, worldViewVector), 0.0), startFresnelSchlick);
+    
+    
+    float3 fresnelSchlick = fresnelFunctionMetal(albedo, startFresnelSchlick, normalize((worldViewVector + processedLightPos/length(processedLightPos)) / 2.0f), worldViewVector, metallic);
 
     float3 numerator = float3(0, 0, 0);
     float denominator = 1;
@@ -123,7 +125,7 @@ float3 processPointLight(PointLight light, float3 normals, float3 fragmentPositi
     {
        
         float3 finalFresnelSchlick = float3(1, 1, 1) - fresnelSchlick;
-        finalFresnelSchlick *= 1.0 - metallic+0.0;
+        finalFresnelSchlick *= 1.0 - metallic+0.001;
 
         float NdotL = max(dot(normals, processedLightPos), 0.0);
         return (finalFresnelSchlick * albedo / PI + specular) * radiance * NdotL*light.intensity;
@@ -134,17 +136,6 @@ float3 processPointLight(PointLight light, float3 normals, float3 fragmentPositi
     }
 }
 
-float3 getReflection(float roughness, float3 reflectanceVec)
-{
-    const float MAX_REFLECTION_LOD = 9.0;
-    float lod = roughness * MAX_REFLECTION_LOD;
-    float lodf = floor(lod);
-    float lodc = ceil(lod);
-    float3 a = cubeMap.SampleLevel(cubeMapSampler, reflectanceVec, lodf).rgb;
-    float3 b = cubeMap.SampleLevel(cubeMapSampler, reflectanceVec, lodc).rgb;
-    return lerp(a, b, lod - lodf);
-}
-
 
 float4 main(PixelShaderInput psInput) : SV_Target
 {
@@ -152,22 +143,20 @@ float4 main(PixelShaderInput psInput) : SV_Target
     //Extract to constant buffer
 
     //
-
     float3 worldViewVector = normalize(cameraPosition - psInput.position);
+    float3 color = float3(0.01, 0.01, 0.01)+psInput.color;
+    
     float3 startFresnelSchlick = float3(0.04, 0.04, 0.04);
-    startFresnelSchlick = lerp(startFresnelSchlick, psInput.color, metallic);
+    startFresnelSchlick = lerp(startFresnelSchlick, color, metallic);
     float3 Lo = float3(0, 0, 0);
-    float3 reflection = getReflection(roughness, reflect(worldViewVector, normal));
     for (uint i = 0; i < 3; i++)
     {
         Lo += processPointLight(lightsInfos[i], normal, psInput.position, worldViewVector, startFresnelSchlick,
-                                roughness, metallic, psInput.color);
+                                roughness, metallic, color);
     }
-    float3 fresnelRoughness = fresnelSchlickRoughness(max(dot(normal, worldViewVector), 0.0), startFresnelSchlick,
-                                                      roughness);
-    float3 specularContribution = reflection * fresnelRoughness * 0.01f;
-    float3 ambient = (float3(ambientIntensity, ambientIntensity, ambientIntensity) * psInput.color + fresnelRoughness +
-        specularContribution);
-    float3 color = ambient + Lo;
-    return float4(color, 1.0f);
+
+    float3 ambient = (float3(ambientIntensity, ambientIntensity, ambientIntensity) *color);
+    float3 rescolor = ambient + Lo;
+    
+    return float4(rescolor, 1.0f);
 }

@@ -14,8 +14,8 @@ struct PBRConfiguration
     int fresnelFunction = 0;
     int geometryFunction = 0;
 
-    float metallic = 1.0;
-    float roughness = 0.0;
+    float metallic = 0.9;
+    float roughness = 0.3;
     float ambientIntensity = 3.0f;
     float alignment;
 };
@@ -46,6 +46,14 @@ struct LightConstant
 {
     PointLightSource sources[3];
     XMFLOAT3 cameraPosition;
+};
+
+struct Vertex
+{
+    float position[3];
+    float normal[3];
+    float uv[2];
+    float color[3];
 };
 
 class Renderer : public IWindowKeyCallback
@@ -93,6 +101,8 @@ public:
     WindowKey* getKeys(uint32_t* pKeysAmountOut) override;
     void makeSphere(std::vector<float>& verticesOutput, std::vector<uint32_t>& indicesOutput, float radius,
                     uint32_t layerTile, uint32_t circumferenceTile,float* defaultColor, bool generateColors);
+    void makeSphere2(std::vector<Vertex>& verticesOutput, std::vector<uint32_t>& indicesOutput, double  radius,
+                    double  latitudeBands , double longitudeBands ,float* defaultColor, bool generateColors);
 
 private:
     void drawGui();

@@ -8,6 +8,20 @@ void ToneMapper::unBindRenderTargets(ID3D11DeviceContext* context)
     context->PSSetShaderResources(0, 5, unBindresourceViews);
 }
 
+void ToneMapper::destroy()
+{
+    destroyScaledBrighnessMaps();
+    delete rtv;
+    samplerAvg->Release();
+    samplerMin->Release();
+    samplerMax->Release();
+
+    mappingVS->Release();
+    brightnessPS->Release();
+    downsamplePS->Release();
+    tonemapPS->Release();
+}
+
 void ToneMapper::initialize(uint32_t width,
                             uint32_t height, uint32_t imageInSwapChain)
 {
