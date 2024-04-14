@@ -203,6 +203,9 @@ void Renderer::release()
     cubeMapTextureResourceView->Release();
     cubeMapTexture->Release();
     delete cubeMapShader;
+    delete lightConstant;
+    delete pbrConfiguration;
+    delete skyboxConfigConstant;
 }
 
 void Renderer::keyEvent(WindowKey key)
@@ -571,7 +574,7 @@ void Renderer::drawGui()
 void Renderer::loadConstants()
 {
     ZeroMemory(&shaderConstant, sizeof(ShaderConstant));
-    shaderConstant.worldMatrix = DirectX::XMMatrixIdentity() * XMMatrixScaling(5, 5, 5);
+    shaderConstant.worldMatrix = DirectX::XMMatrixIdentity() * XMMatrixScaling(3,3,3);
     constantBuffer = new ConstantBuffer(device.getDevice(), &shaderConstant, sizeof(ShaderConstant),
                                         "Camera and mesh transform matrices");
 
