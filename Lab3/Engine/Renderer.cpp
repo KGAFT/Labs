@@ -197,7 +197,7 @@ void Renderer::loadSphere()
 {
     std::vector<Vertex> vertices;
     std::vector<uint32_t> indices;
-    float color[] = {1.0, 0.8431372, 0, 1.0f};
+    float color[] = {0.75, 0, 0};
     makeSphere2(vertices, indices, 25, 52, 52, color, false);
     sphereVertex = shader->createVertexBuffer(device.getDevice(), vertices.size() * sizeof(Vertex), sizeof(Vertex),
                                               vertices.data(),
@@ -394,6 +394,66 @@ void Renderer::makeSphere2(std::vector<Vertex>& verticesOutput, std::vector<uint
     indicesOutput[(__int64)k + 1] = numVertices - 2;
 }
 
+void Renderer::makesphere3(std::vector<float>& verticesOutput, std::vector<uint32_t>& indicesOutput, float* defaultColor)
+{
+
+
+    const unsigned int X_SEGMENTS = 64;
+    const unsigned int Y_SEGMENTS = 64;
+    for (unsigned int x = 0; x <= X_SEGMENTS; ++x)
+    {
+        for (unsigned int y = 0; y <= Y_SEGMENTS; ++y)
+        {
+            float xSegment = (float)x / (float)X_SEGMENTS;
+            float ySegment = (float)y / (float)Y_SEGMENTS;
+            float xPos = std::cos(xSegment * 2.0f * PI) * std::sin(ySegment * PI);
+            float yPos = std::cos(ySegment * PI);
+            float zPos = std::sin(xSegment * 2.0f * PI) * std::sin(ySegment * PI);
+
+            verticesOutput.push_back(xPos);
+            verticesOutput.push_back(yPos);
+            verticesOutput.push_back(zPos);
+            
+            verticesOutput.push_back(xPos);
+            verticesOutput.push_back(yPos);
+            verticesOutput.push_back(zPos);
+
+            
+            verticesOutput.push_back(xSegment);
+            verticesOutput.push_back(ySegment);
+
+            verticesOutput.push_back(defaultColor[0]);
+            verticesOutput.push_back(defaultColor[1]);
+            verticesOutput.push_back(defaultColor[2]);
+
+
+        }
+    }
+
+    bool oddRow = false;
+    for (unsigned int y = 0; y < Y_SEGMENTS; ++y)
+    {
+        if (!oddRow) // even rows: y == 0, y == 2; and so on
+        {
+            for (unsigned int x = 0; x <= X_SEGMENTS; ++x)
+            {
+                indicesOutput.push_back(y * (X_SEGMENTS + 1) + x);
+                indicesOutput.push_back((y + 1) * (X_SEGMENTS + 1) + x);
+            }
+        }
+        else
+        {
+            for (int x = X_SEGMENTS; x >= 0; --x)
+            {
+                indicesOutput.push_back((y + 1) * (X_SEGMENTS + 1) + x);
+                indicesOutput.push_back(y * (X_SEGMENTS + 1) + x);
+            }
+        }
+        oddRow = !oddRow;
+    }
+
+}
+
 void Renderer::drawGui()
 {
     ImGui_ImplDX11_NewFrame();
@@ -428,8 +488,8 @@ void Renderer::drawGui()
     }
 
     ImGui::Text("Mesh configuration");
-    ImGui::SliderFloat("Metallic value", &configuration.metallic, 0, 1);
-    ImGui::SliderFloat("Roughness value", &configuration.roughness, 0, 1);
+    ImGui::SliderFloat("Metallic value", &configuration.metallic, 0.001, 1);
+    ImGui::SliderFloat("Roughness value", &configuration.roughness, 0.001, 1);
     ImGui::Text("Lights configuration");
     float lightsPosition[3][3];
     for (uint32_t i = 0; i < 3; i++)
@@ -457,13 +517,13 @@ void Renderer::drawGui()
 void Renderer::loadConstants()
 {
     ZeroMemory(&shaderConstant, sizeof(ShaderConstant));
-    shaderConstant.worldMatrix = DirectX::XMMatrixIdentity() * XMMatrixScaling(3,3,3);
+    shaderConstant.worldMatrix = DirectX::XMMatrixIdentity();
     constantBuffer = new ConstantBuffer(device.getDevice(), &shaderConstant, sizeof(ShaderConstant),
                                         "Camera and mesh transform matrices");
 
-    lightConstantData.sources[0].position = XMFLOAT3(0, 40, 0);
-    lightConstantData.sources[1].position = XMFLOAT3(40, 0, 0);
-    lightConstantData.sources[2].position = XMFLOAT3(0, -40, -40);
+    lightConstantData.sources[0].position = XMFLOAT3(5, 5, 5);
+    lightConstantData.sources[1].position = XMFLOAT3(-5, 0, 0);
+    lightConstantData.sources[2].position = XMFLOAT3(0, -5, -5);
 
     lightConstant = new ConstantBuffer(device.getDevice(), &lightConstantData, sizeof(lightConstantData),
                                        "Light sources infos");

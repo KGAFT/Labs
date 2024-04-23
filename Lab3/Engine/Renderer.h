@@ -15,7 +15,7 @@ struct PBRConfiguration
     int geometryFunction = 0;
 
     float metallic = 0.9;
-    float roughness = 0.3;
+    float roughness = 0.03;
     float ambientIntensity = 3.0f;
     float alignment;
 };
@@ -103,7 +103,7 @@ public:
                     uint32_t layerTile, uint32_t circumferenceTile,float* defaultColor, bool generateColors);
     void makeSphere2(std::vector<Vertex>& verticesOutput, std::vector<uint32_t>& indicesOutput, double  radius,
                     double  latitudeBands , double longitudeBands ,float* defaultColor, bool generateColors);
-
+    void makesphere3(std::vector<float>& verticesOutput, std::vector<uint32_t>& indicesOutput, float* defaultColor);
 private:
     void drawGui();
     void loadShader();
