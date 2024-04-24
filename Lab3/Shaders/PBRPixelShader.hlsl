@@ -64,7 +64,8 @@ float schlickGeometryGGX(float nvl, float roughness)
 
 float smithGeometry(float3 n, float3 v, float3 l, float roughness)
 {
-    return schlickGeometryGGX(max(dot(n, v), 0.0f), roughness) * schlickGeometryGGX(max(dot(n, l), 0.0f), roughness);
+    return schlickGeometryGGX(max(dot(n, v), 0.0001f), roughness) * schlickGeometryGGX(
+        max(dot(n, l), 0.0001f), roughness);
 }
 
 ///
@@ -103,12 +104,10 @@ float3 processPointLight(PointLight light, float3 normals, float3 fragmentPositi
     else if (normalDistribution)
     {
         numerator = float3(halfWayGGX, halfWayGGX, halfWayGGX);
-        denominator = 1.0f;
     }
     else if (geometryFunction)
     {
         numerator = float3(geometrySmith, geometrySmith, geometrySmith);
-        denominator = 1.0f;
     }
     float3 kd = float3(1.0f, 1.0f, 1.0f) - fresnelSchlick;
     kd = kd * (1.0f - metallic);
@@ -157,28 +156,30 @@ float4 main(PixelShaderInput psInput) : SV_Target
         float3 kd = float3(1.0f, 1.0f, 1.0f) - F;
         kd = kd * (1.0f - metallic);
 
-
+        float3 lightImpact;
         if (defaultFunction)
         {
-            finalColor += (kd * normal / pi +
+            lightImpact = (kd * normal / pi +
                     NDF * G * F / max(4.0f * max(dot(normal, viewDir), 0.0f) * max(dot(normal, lightDir), 0.0f),
                                       0.0001f)) *
                 radiance * max(dot(normal, lightDir), 0.0f);
         }
         else if (fresnelFunction)
         {
-            finalColor += (F / max(4.0f * max(dot(normal, viewDir), 0.0f) * max(dot(normal, lightDir), 0.0f),
+            lightImpact = (F / max(4.0f * max(dot(normal, viewDir), 0.0f) * max(dot(normal, lightDir), 0.0f),
                                    0.0001f)) *
                 max(dot(normal, lightDir), 0.0f);
         }
         else if (normalDistribution)
         {
-            finalColor += float3(NDF, NDF, NDF);
+            lightImpact = float3(NDF, NDF, NDF);
         }
         else if (geometryFunction)
         {
-            finalColor += float3(G, G, G);
+            lightImpact = float3(G, G, G);
         }
+
+        finalColor += lightImpact * lightsInfos[i].intensity;
     }
     return float4(finalColor, 1.0f);
 }

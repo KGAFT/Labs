@@ -157,6 +157,7 @@
     <ClCompile Include="DXDevice\DXRenderTargetView.cpp" />
     <ClCompile Include="DXDevice\DXSwapChain.cpp" />
     <ClCompile Include="Engine\Renderer.cpp" />
+    <ClCompile Include="Engine\tiny_obj.cc" />
     <ClCompile Include="Engine\ToneMapper.cpp" />
     <ClCompile Include="ImGUI\imgui.cpp" />
     <ClCompile Include="ImGUI\imgui_draw.cpp" />
@@ -179,6 +180,7 @@
     <ClInclude Include="DXShader\Shader.h" />
     <ClInclude Include="DXShader\VertexBuffer.h" />
     <ClInclude Include="Engine\Renderer.h" />
+    <ClInclude Include="Engine\tiny_obj_loader.h" />
     <ClInclude Include="Engine\ToneMapper.h" />
     <ClInclude Include="ImGUI\imconfig.h" />
     <ClInclude Include="ImGUI\imgui.h" />
@@ -197,6 +199,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </CopyFileToFolders>
     <CopyFileToFolders Include="Images\BrightSky.dds">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </CopyFileToFolders>
+    <CopyFileToFolders Include="Images\sphere.obj">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </CopyFileToFolders>
     <Content Include="Shaders\*.hlsl">

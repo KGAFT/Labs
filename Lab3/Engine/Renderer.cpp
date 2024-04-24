@@ -7,7 +7,7 @@
 #include "../ImGUI/imgui_impl_dx11.h"
 #include "../ImGUI/imgui_impl_win32.h"
 #include <DDSTextureLoader.h>
-
+#include "tiny_obj_loader.h"
 #include "../Utils/FileSystemUtils.h"
 
 #define PI 3.14159265359
@@ -195,11 +195,11 @@ void Renderer::loadShader()
 
 void Renderer::loadSphere()
 {
-    std::vector<Vertex> vertices;
+    std::vector<float> vertices;
     std::vector<uint32_t> indices;
     float color[] = {0.75, 0, 0};
-    makeSphere2(vertices, indices, 25, 52, 52, color, false);
-    sphereVertex = shader->createVertexBuffer(device.getDevice(), vertices.size() * sizeof(Vertex), sizeof(Vertex),
+    makesphere3(vertices, indices, color);
+    sphereVertex = shader->createVertexBuffer(device.getDevice(), vertices.size() * sizeof(float), sizeof(float)*11,
                                               vertices.data(),
                                               "Sphere vertex buffer");
     sphereIndex = shader->createIndexBuffer(device.getDevice(), indices.data(), indices.size(),
@@ -244,212 +244,47 @@ WindowKey* Renderer::getKeys(uint32_t* pKeysAmountOut)
 
 
 
-void Renderer::makeSphere2(std::vector<Vertex>& verticesOutput, std::vector<uint32_t>& indicesOutput, double radius,
-                           double latitudeBands, double longitudeBands, float* defaultColor, bool generateColors)
-{
-    std::default_random_engine gen;
-    std::uniform_real_distribution<double> colorGenerator(0.0,
-                                                          1.0);
-    uint32_t numVertices = ((latitudeBands - 2) * longitudeBands) + 2;
-    uint32_t numIndices = (((latitudeBands - 3) * (longitudeBands) * 2) + (longitudeBands * 2)) * 3;
-
-    float phi = 0.0f;
-    float theta = 0.0f;
-
-    verticesOutput.resize(numVertices);
-
-    XMVECTOR currVertPos = XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);
-
-    verticesOutput[0].position[0] = 0.0f;
-    verticesOutput[0].position[1] = 0.0f;
-    verticesOutput[0].position[2] = 1.0f;
-    verticesOutput[0].normal[0] = 0.0f;
-    verticesOutput[0].normal[1] = 0.0f;
-    verticesOutput[0].normal[2] = 1.0f;
-
-    if (generateColors)
-    {
-        verticesOutput[0].color[0] = colorGenerator(gen);
-        verticesOutput[0].color[1] = colorGenerator(gen);
-        verticesOutput[0].color[2] = colorGenerator(gen);
-
-    }
-    if (!generateColors && defaultColor)
-    {
-        verticesOutput[0].color[0] = defaultColor[0];
-        verticesOutput[0].color[1] = defaultColor[1];
-        verticesOutput[0].color[2] = defaultColor[2];
-    }
-
-    for (uint32_t i = 0; i < latitudeBands - 2; i++)
-    {
-        theta = (i + 1) * (XM_PI / (latitudeBands - 1));
-        XMMATRIX Rotationx = XMMatrixRotationX(theta);
-        for (uint32_t j = 0; j < longitudeBands; j++)
-        {
-            phi = j * (XM_2PI / longitudeBands);
-            XMMATRIX Rotationy = XMMatrixRotationZ(phi);
-            currVertPos = XMVector3TransformNormal(XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f), (Rotationx * Rotationy));
-            currVertPos = XMVector3Normalize(currVertPos);
-
-
-            verticesOutput[i * (__int64)longitudeBands + j + 1].position[0] = XMVectorGetX(currVertPos);
-            verticesOutput[i * (__int64)longitudeBands + j + 1].position[1] = XMVectorGetY(currVertPos);
-            verticesOutput[i * (__int64)longitudeBands + j + 1].position[2] = XMVectorGetZ(currVertPos);
-            verticesOutput[i * (__int64)longitudeBands + j + 1].normal[0] = XMVectorGetX(currVertPos);
-            verticesOutput[i * (__int64)longitudeBands + j + 1].normal[1] = XMVectorGetY(currVertPos);
-            verticesOutput[i * (__int64)longitudeBands + j + 1].normal[2] = XMVectorGetZ(currVertPos);
-
-            if (generateColors)
-            {
-                verticesOutput[i * (__int64)longitudeBands + j + 1].color[0] = colorGenerator(gen);
-                verticesOutput[i * (__int64)longitudeBands + j + 1].color[1] = colorGenerator(gen);
-                verticesOutput[i * (__int64)longitudeBands + j + 1].color[2] = colorGenerator(gen);
-
-            }
-            if (!generateColors && defaultColor)
-            {
-                verticesOutput[i * (__int64)longitudeBands + j + 1].color[0] = defaultColor[0];
-                verticesOutput[i * (__int64)longitudeBands + j + 1].color[1] = defaultColor[1];
-                verticesOutput[i * (__int64)longitudeBands + j + 1].color[2] = defaultColor[2];
-            }
-        }
-    }
-
-
-    verticesOutput[(__int64)numVertices - 1].position[0] = 0.0f;
-    verticesOutput[(__int64)numVertices - 1].position[1] = 0.0f;
-    verticesOutput[(__int64)numVertices - 1].position[2] = -1.0f;
-    verticesOutput[(__int64)numVertices - 1].normal[0] = 0.0f;
-    verticesOutput[(__int64)numVertices - 1].normal[1] = 0.0f;
-    verticesOutput[(__int64)numVertices - 1].normal[2] = -1.0f;
-
-    if (generateColors)
-    {
-        verticesOutput[(__int64)numVertices - 1].color[0] = colorGenerator(gen);
-        verticesOutput[(__int64)numVertices - 1].color[1] = colorGenerator(gen);
-        verticesOutput[(__int64)numVertices - 1].color[2] = colorGenerator(gen);
-
-    }
-    if (!generateColors && defaultColor)
-    {
-        verticesOutput[(__int64)numVertices - 1].color[0] = defaultColor[0];
-        verticesOutput[(__int64)numVertices - 1].color[1] = defaultColor[1];
-        verticesOutput[(__int64)numVertices - 1].color[2] = defaultColor[2];
-    }
-    indicesOutput.resize(numIndices);
-    uint32_t k = 0;
-    for (uint32_t i = 0; i < longitudeBands - 1; i++)
-    {
-        indicesOutput[k] = i + 1;
-        indicesOutput[(__int64)k + 2] = 0;
-        indicesOutput[(__int64)k + 1] = i + 2;
-        k += 3;
-    }
-
-
-    indicesOutput[k] = longitudeBands;
-    indicesOutput[(__int64)k + 2] = 0;
-    indicesOutput[(__int64)k + 1] = 1;
-    k += 3;
-
-    for (uint32_t i = 0; i < latitudeBands - 3; i++)
-    {
-        for (uint32_t j = 0; j < longitudeBands - 1; j++)
-        {
-            indicesOutput[(__int64)k + 2] = i * longitudeBands + j + 1;
-            indicesOutput[(__int64)k + 1] = i * longitudeBands + j + 2;
-            indicesOutput[k] = (i + 1) * longitudeBands + j + 1;
-
-            indicesOutput[(__int64)k + 5] = (i + 1) * longitudeBands + j + 1;
-            indicesOutput[(__int64)k + 4] = i * longitudeBands + j + 2;
-            indicesOutput[(__int64)k + 3] = (i + 1) * longitudeBands + j + 2;
-
-            k += 6;
-        }
-
-
-        indicesOutput[(__int64)k + 2] = (i * longitudeBands) + longitudeBands;
-        indicesOutput[(__int64)k + 1] = (i * longitudeBands) + 1;
-        indicesOutput[k] = ((i + 1) * longitudeBands) + longitudeBands;
-
-        indicesOutput[(__int64)k + 5] = ((i + 1) * longitudeBands) + longitudeBands;
-        indicesOutput[(__int64)k + 4] = (i * longitudeBands) + 1;
-        indicesOutput[(__int64)k + 3] = ((i + 1) * longitudeBands) + 1;
-
-        k += 6;
-    }
-
-    for (uint32_t i = 0; i < longitudeBands - 1; i++)
-    {
-        indicesOutput[(__int64)k + 2] = numVertices - 1;
-        indicesOutput[k] = (numVertices - 1) - (i + 1);
-        indicesOutput[(__int64)k + 1] = (numVertices - 1) - (i + 2);
-        k += 3;
-    }
-
-
-    indicesOutput[(__int64)k + 2] = numVertices - 1;
-    indicesOutput[k] = (numVertices - 1) - longitudeBands;
-    indicesOutput[(__int64)k + 1] = numVertices - 2;
-}
 
 void Renderer::makesphere3(std::vector<float>& verticesOutput, std::vector<uint32_t>& indicesOutput, float* defaultColor)
 {
-
-
-    const unsigned int X_SEGMENTS = 64;
-    const unsigned int Y_SEGMENTS = 64;
-    for (unsigned int x = 0; x <= X_SEGMENTS; ++x)
+    tinyobj::attrib_t inattrib;
+    std::vector<tinyobj::shape_t> inshapes;
+    std::vector<tinyobj::material_t> materials;
+    
+    auto workDir = FileSystemUtils::getCurrentDirectoryPath();
+    workDir+=L"sphere.obj";
+    std::string s( workDir.begin(), workDir.end() );
+    std::string warn;
+    std::string err;
+    bool ret = tinyobj::LoadObj(&inattrib, &inshapes, &materials, &err, s.c_str());
+    if (!err.empty()) {
+        std::cerr << err << std::endl;
+        return;
+    }
+    
+    uint32_t idCounter = 0;
+    for (auto shape : inshapes)
     {
-        for (unsigned int y = 0; y <= Y_SEGMENTS; ++y)
+        for (auto index : shape.mesh.indices)
         {
-            float xSegment = (float)x / (float)X_SEGMENTS;
-            float ySegment = (float)y / (float)Y_SEGMENTS;
-            float xPos = std::cos(xSegment * 2.0f * PI) * std::sin(ySegment * PI);
-            float yPos = std::cos(ySegment * PI);
-            float zPos = std::sin(xSegment * 2.0f * PI) * std::sin(ySegment * PI);
+            verticesOutput.push_back(inattrib.vertices[index.vertex_index*3]);
+            verticesOutput.push_back(inattrib.vertices[index.vertex_index*3+1]);
+            verticesOutput.push_back(inattrib.vertices[index.vertex_index*3+2]);
 
-            verticesOutput.push_back(xPos);
-            verticesOutput.push_back(yPos);
-            verticesOutput.push_back(zPos);
+            verticesOutput.push_back(inattrib.texcoords[index.texcoord_index*2]);
+            verticesOutput.push_back(inattrib.texcoords[index.texcoord_index*2+1]);
             
-            verticesOutput.push_back(xPos);
-            verticesOutput.push_back(yPos);
-            verticesOutput.push_back(zPos);
-
-            
-            verticesOutput.push_back(xSegment);
-            verticesOutput.push_back(ySegment);
+            verticesOutput.push_back(inattrib.normals[index.normal_index*3]);
+            verticesOutput.push_back(inattrib.normals[index.normal_index*3+1]);
+            verticesOutput.push_back(inattrib.normals[index.normal_index*3+2]);
 
             verticesOutput.push_back(defaultColor[0]);
             verticesOutput.push_back(defaultColor[1]);
             verticesOutput.push_back(defaultColor[2]);
 
-
+            indicesOutput.push_back(idCounter);
+            idCounter++;
         }
-    }
-
-    bool oddRow = false;
-    for (unsigned int y = 0; y < Y_SEGMENTS; ++y)
-    {
-        if (!oddRow) // even rows: y == 0, y == 2; and so on
-        {
-            for (unsigned int x = 0; x <= X_SEGMENTS; ++x)
-            {
-                indicesOutput.push_back(y * (X_SEGMENTS + 1) + x);
-                indicesOutput.push_back((y + 1) * (X_SEGMENTS + 1) + x);
-            }
-        }
-        else
-        {
-            for (int x = X_SEGMENTS; x >= 0; --x)
-            {
-                indicesOutput.push_back((y + 1) * (X_SEGMENTS + 1) + x);
-                indicesOutput.push_back(y * (X_SEGMENTS + 1) + x);
-            }
-        }
-        oddRow = !oddRow;
     }
 
 }
@@ -517,7 +352,7 @@ void Renderer::drawGui()
 void Renderer::loadConstants()
 {
     ZeroMemory(&shaderConstant, sizeof(ShaderConstant));
-    shaderConstant.worldMatrix = DirectX::XMMatrixIdentity();
+    shaderConstant.worldMatrix = DirectX::XMMatrixIdentity()*XMMatrixScaling(3, 3, 3);
     constantBuffer = new ConstantBuffer(device.getDevice(), &shaderConstant, sizeof(ShaderConstant),
                                         "Camera and mesh transform matrices");
 

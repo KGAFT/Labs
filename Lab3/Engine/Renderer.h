@@ -99,10 +99,6 @@ public:
     void release();
     void keyEvent(WindowKey key) override;
     WindowKey* getKeys(uint32_t* pKeysAmountOut) override;
-    void makeSphere(std::vector<float>& verticesOutput, std::vector<uint32_t>& indicesOutput, float radius,
-                    uint32_t layerTile, uint32_t circumferenceTile,float* defaultColor, bool generateColors);
-    void makeSphere2(std::vector<Vertex>& verticesOutput, std::vector<uint32_t>& indicesOutput, double  radius,
-                    double  latitudeBands , double longitudeBands ,float* defaultColor, bool generateColors);
     void makesphere3(std::vector<float>& verticesOutput, std::vector<uint32_t>& indicesOutput, float* defaultColor);
 private:
     void drawGui();
