@@ -30,6 +30,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
         window->pollEvents();
     }
     renderer.release();
+
     return 0;
 }
 

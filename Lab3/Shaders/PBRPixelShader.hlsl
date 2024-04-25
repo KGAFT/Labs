@@ -37,149 +37,126 @@ SamplerState cubeMapSampler : register (s0);
 static const float PI = 3.14159265359;
 
 
-///
-
-float3 fresnelFunctionMetal(float3 objColor, float3 h, float3 v, float metalness)
+float distributeGGX(float3 normals, float3 halfWayVector, float roughness)
 {
-    float3 f = float3(0.04f, 0.04f, 0.04f) * (1 - metalness) + objColor * metalness;
-    return f + (float3(1.0f, 1.0f, 1.0f) - f) * pow(1.0f - max(dot(h, v), 0.0f), 5);
-}
+    float a = roughness * roughness;
+    float a2 = a * a;
+    float NdotH = max(dot(normals, halfWayVector), 0.0);
+    float NdotH2 = NdotH * NdotH;
 
-float distributeGGX(float3 n, float3 h, float roughness)
-{
-    float num = roughness * roughness;
-    float denom = max(dot(n, h), 0.0f);
-    denom = denom * denom * (num - 1.0f) + 1.0f;
+    float nom = a2;
+    float denom = (NdotH2 * (a2 - 1.0) + 1.0);
     denom = PI * denom * denom;
-    return num / denom;
+
+    return nom / denom;
 }
 
-float schlickGeometryGGX(float nvl, float roughness)
+float schlickGeometryGGX(float dotWorldViewVector, float roughness)
 {
-    float k = roughness + 1.0f;
-    k = k * k / 8.0f;
-
-    return nvl / (nvl * (1.0f - k) + k);
+    float roughnessKoef = ((roughness + 1.0) * (roughness + 1.0)) / 8.0;
+    float numerator = dotWorldViewVector;
+    float denominator = dotWorldViewVector * (1.0 - roughnessKoef) + roughnessKoef;
+    return numerator / denominator;
 }
 
-float smithGeometry(float3 n, float3 v, float3 l, float roughness)
+float smithGeometry(float3 processedNormals, float3 worldViewVector, float3 lightPosition, float roughness)
 {
-    return schlickGeometryGGX(max(dot(n, v), 0.0001f), roughness) * schlickGeometryGGX(
-        max(dot(n, l), 0.0001f), roughness);
+    float worldViewVectorDot = max(dot(processedNormals, worldViewVector), 0.0);
+    float lightDot = max(dot(processedNormals, lightPosition), 0.0);
+    float ggx2 = schlickGeometryGGX(worldViewVectorDot, roughness);
+    float ggx1 = schlickGeometryGGX(lightDot, roughness);
+    return ggx1 * ggx2;
 }
 
-///
+float3 fresnelSchlickBase(float cosTheta, float3 startFresnelSchlick)
+{
+    return startFresnelSchlick + (1.0 - startFresnelSchlick) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
+}
 
+float3 fresnelFunctionMetal(float3 objColor, float3 startFresnelSchlick,  float3 h, in float3 worldViewVector, float metalllic)
+{
+    float3 f = startFresnelSchlick * (1 - metalllic) + objColor * metalllic;
+    return f + (float3(1.0f, 1.0f, 1.0f) - f) * pow(1.0f - max(dot(h, worldViewVector), 0.0f), 5);
+}
 
 float3 processPointLight(PointLight light, float3 normals, float3 fragmentPosition, float3 worldViewVector,
                          float3 startFresnelSchlick, float roughness, float metallic, float3 albedo)
 {
-    float3 lightDir = light.position.xyz - fragmentPosition;
-    float lightDist = length(lightDir);
-    lightDir /= lightDist;
-    float atten = clamp(1.0 / (lightDist * lightDist), 0, 1.0f);
-    float3 radiance = float3(1, 1, 1) * light.intensity * atten;
+    float3 processedLightPos = normalize(light.position - fragmentPosition);
+    float3 halfWay = normalize(worldViewVector + processedLightPos);
+    float distance = length(light.position - fragmentPosition);
+    float attenuation = clamp(1.0 / (distance * distance), 0.01, 1.0f);
+    float3 radiance = float3(1, 1, 1)* light.intensity *attenuation;
 
-    float halfWayGGX = distributeGGX(normals, normalize((worldViewVector + lightDir) / 2.0f), roughness);;
-    float geometrySmith = smithGeometry(normals, worldViewVector, lightDir, roughness);
-
-
-    float3 fresnelSchlick = fresnelFunctionMetal(albedo, normalize((worldViewVector + lightDir) / 2.0f),
-                                                 worldViewVector, metallic);
+    float halfWayGGX = distributeGGX(normals, halfWay, roughness);
+    float geometrySmith = smithGeometry(normals, worldViewVector, processedLightPos, roughness);
+    
+    
+    float3 fresnelSchlick = fresnelFunctionMetal(albedo, startFresnelSchlick, normalize((worldViewVector + processedLightPos/length(processedLightPos)) / 2.0f), worldViewVector, metallic);
 
     float3 numerator = float3(0, 0, 0);
     float denominator = 1;
     if (defaultFunction)
     {
-        numerator = halfWayGGX * geometrySmith * fresnelSchlick;
-        denominator = 4.0 * max(dot(normals, worldViewVector), 0.0) * radiance * max(dot(normals, lightDir), 0.0) +
+        numerator = halfWayGGX*geometrySmith * fresnelSchlick;
+        denominator = 4.0 * max(dot(normals, worldViewVector), 0.0) * max(dot(normals, processedLightPos), 0.0) +
             0.0001;
     }
     else if (fresnelFunction)
     {
         numerator = fresnelSchlick;
-        denominator = 4.0 * max(dot(normals, worldViewVector), 0.0) * max(dot(normals, lightDir), 0.0) +
+        denominator = 4.0 * max(dot(normals, worldViewVector), 0.0) * max(dot(normals, processedLightPos), 0.0) +
             0.0001;;
     }
     else if (normalDistribution)
     {
         numerator = float3(halfWayGGX, halfWayGGX, halfWayGGX);
+        denominator = 1.0f;
     }
     else if (geometryFunction)
     {
         numerator = float3(geometrySmith, geometrySmith, geometrySmith);
-    }
-    float3 kd = float3(1.0f, 1.0f, 1.0f) - fresnelSchlick;
-    kd = kd * (1.0f - metallic);
-    float3 specular = numerator / denominator;
-    if (fresnelFunction || defaultFunction)
-    {
-        return kd * albedo / PI + specular;
+        denominator = 1.0f;
     }
 
-    return specular;
+
+    float3 specular = numerator / denominator;
+    if (defaultFunction)
+    {
+       
+        float3 finalFresnelSchlick = float3(1, 1, 1) - fresnelSchlick;
+        finalFresnelSchlick *= 1.0 - metallic+0.001;
+
+        float NdotL = max(dot(normals, processedLightPos), 0.0);
+        return (finalFresnelSchlick * albedo / PI + specular) * radiance * NdotL;
+    }
+    else
+    {
+        return specular;
+    }
 }
 
 
 float4 main(PixelShaderInput psInput) : SV_Target
 {
-    float3 finalColor;
-    if (defaultFunction)
-    {
-        finalColor = psInput.color;
-    }
-    else
-    {
-        finalColor = float3(0.0f, 0.0f, 0.0f);
-    }
     float3 normal = normalize(psInput.normal);
+    //Extract to constant buffer
 
-    float3 viewDir = normalize(cameraPosition - psInput.position);
-    float pi = 3.14159265359f;
-    for (int i = 0; i < 3; i++)
+    //
+    float3 worldViewVector = normalize(cameraPosition - psInput.position);
+    float3 color = float3(0.01, 0.01, 0.01)+psInput.color;
+    
+    float3 startFresnelSchlick = float3(0.04, 0.04, 0.04);
+    startFresnelSchlick = lerp(startFresnelSchlick, color, metallic);
+    float3 Lo = float3(0, 0, 0);
+    for (uint i = 0; i < 3; i++)
     {
-        float3 lightDir = lightsInfos[i].position - psInput.position;
-        float lightDist = length(lightDir);
-        lightDir /= lightDist;
-        float atten = clamp(1.0 / (lightDist * lightDist), 0, 1.0f);
-        float3 radiance = float3(1, 1, 1) * lightsInfos[i].intensity * atten;
-
-
-        float3 F = fresnelFunctionMetal(psInput.color, normalize((viewDir + lightDir) / 2.0f), viewDir, metallic);
-
-        float NDF = distributeGGX(normal, normalize((viewDir + lightDir) / 2.0f), roughness);
-
-
-        float G = smithGeometry(normal, viewDir, lightDir, roughness);
-
-
-        float3 kd = float3(1.0f, 1.0f, 1.0f) - F;
-        kd = kd * (1.0f - metallic);
-
-        float3 lightImpact;
-        if (defaultFunction)
-        {
-            lightImpact = (kd * normal / pi +
-                    NDF * G * F / max(4.0f * max(dot(normal, viewDir), 0.0f) * max(dot(normal, lightDir), 0.0f),
-                                      0.0001f)) *
-                radiance * max(dot(normal, lightDir), 0.0f);
-        }
-        else if (fresnelFunction)
-        {
-            lightImpact = (F / max(4.0f * max(dot(normal, viewDir), 0.0f) * max(dot(normal, lightDir), 0.0f),
-                                   0.0001f)) *
-                max(dot(normal, lightDir), 0.0f);
-        }
-        else if (normalDistribution)
-        {
-            lightImpact = float3(NDF, NDF, NDF);
-        }
-        else if (geometryFunction)
-        {
-            lightImpact = float3(G, G, G);
-        }
-
-        finalColor += lightImpact * lightsInfos[i].intensity;
+        Lo += processPointLight(lightsInfos[i], normal, psInput.position, worldViewVector, startFresnelSchlick,
+                                roughness, metallic, color);
     }
-    return float4(finalColor, 1.0f);
+
+    float3 ambient = (float3(ambientIntensity, ambientIntensity, ambientIntensity) *color);
+    float3 rescolor = ambient + Lo;
+    
+    return float4(rescolor, 1.0f);
 }

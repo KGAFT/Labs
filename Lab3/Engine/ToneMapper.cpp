@@ -15,7 +15,7 @@ void ToneMapper::destroy()
     samplerAvg->Release();
     samplerMin->Release();
     samplerMax->Release();
-
+    delete constantBuffer;
     mappingVS->Release();
     brightnessPS->Release();
     downsamplePS->Release();

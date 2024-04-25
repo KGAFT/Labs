@@ -201,7 +201,7 @@
     <CopyFileToFolders Include="Images\BrightSky.dds">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </CopyFileToFolders>
-    <CopyFileToFolders Include="Images\sphere.obj">
+    <CopyFileToFolders Include="Images\sphere.wvf">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </CopyFileToFolders>
     <Content Include="Shaders\*.hlsl">

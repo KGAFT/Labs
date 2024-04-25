@@ -197,7 +197,7 @@ void Renderer::loadSphere()
 {
     std::vector<float> vertices;
     std::vector<uint32_t> indices;
-    float color[] = {0.75, 0, 0};
+    float color[] = {0, 0.815686, 0.38431};
     makesphere3(vertices, indices, color);
     sphereVertex = shader->createVertexBuffer(device.getDevice(), vertices.size() * sizeof(float), sizeof(float)*11,
                                               vertices.data(),
@@ -220,6 +220,7 @@ void Renderer::release()
     skyboxRasterState->Release();
     cubeMapTextureResourceView->Release();
     cubeMapTexture->Release();
+    annotation->Release();
     delete cubeMapShader;
     delete lightConstant;
     delete pbrConfiguration;
@@ -252,7 +253,7 @@ void Renderer::makesphere3(std::vector<float>& verticesOutput, std::vector<uint3
     std::vector<tinyobj::material_t> materials;
     
     auto workDir = FileSystemUtils::getCurrentDirectoryPath();
-    workDir+=L"sphere.obj";
+    workDir+=L"sphere.wvf";
     std::string s( workDir.begin(), workDir.end() );
     std::string warn;
     std::string err;
@@ -356,7 +357,7 @@ void Renderer::loadConstants()
     constantBuffer = new ConstantBuffer(device.getDevice(), &shaderConstant, sizeof(ShaderConstant),
                                         "Camera and mesh transform matrices");
 
-    lightConstantData.sources[0].position = XMFLOAT3(5, 5, 5);
+    lightConstantData.sources[0].position = XMFLOAT3(0, 5, 0);
     lightConstantData.sources[1].position = XMFLOAT3(-5, 0, 0);
     lightConstantData.sources[2].position = XMFLOAT3(0, -5, -5);
 

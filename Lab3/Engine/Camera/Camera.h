@@ -19,9 +19,7 @@ public:
         keys.push_back({ DIK_C,  KEY_DOWN });
         keys.push_back({ DIK_SPACE, KEY_DOWN });
 
-        position = XMFLOAT3(focus.x - cosf(theta) * cosf(phi) * r,
-            focus.y - sinf(theta) * r,
-            focus.z - cosf(theta) * sinf(phi) * r);
+        position = XMFLOAT3(-10.02, -0.09446, -0.76995);
         updateViewMatrix();
     }
 private:
