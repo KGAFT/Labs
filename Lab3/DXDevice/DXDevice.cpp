@@ -92,6 +92,7 @@ DXDevice::~DXDevice() {
 	dxgiDevice->Release();
 	dxgiAdapter->Release();
 	dxgiFactory->Release();
+	deviceContext->Flush();
 	deviceContext->Release();
 	device->Release();
 }

@@ -23,14 +23,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
    
    
     auto window = Window::createWindow(hInstance, 1920, 1080, L"Lab3");
-    Renderer renderer(window);
+    Renderer* renderer = new Renderer(window);
     while (!window->isNeedToClose()) {
-        renderer.drawFrame();
+        renderer->drawFrame();
 
         window->pollEvents();
     }
-    renderer.release();
-
+    renderer->release();
+    delete renderer;
     return 0;
 }
 

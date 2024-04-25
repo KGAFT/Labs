@@ -221,6 +221,10 @@ void Renderer::release()
     cubeMapTextureResourceView->Release();
     cubeMapTexture->Release();
     annotation->Release();
+
+    ImGui_ImplWin32_Shutdown();
+    ImGui_ImplDX11_Shutdown();
+    ImGui::DestroyContext();
     delete cubeMapShader;
     delete lightConstant;
     delete pbrConfiguration;
