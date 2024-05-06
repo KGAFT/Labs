@@ -39,7 +39,7 @@ struct SkyboxConfig
 struct PointLightSource
 {
     XMFLOAT3 position;
-    float intensity = 1;
+    float intensity = 0;
 };
 
 struct LightConstant

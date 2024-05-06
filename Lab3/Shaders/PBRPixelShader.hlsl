@@ -1,6 +1,7 @@
 struct PixelShaderInput
 {
     float4 position: SV_POSITION;
+    float4 worldPos: WORLDPOS;
     float3 normal: NORMAL;
     float2 uv: UV;
     float3 color: COLOR;
@@ -34,18 +35,17 @@ cbuffer Configuration: register(b1)
 TextureCube cubeMap : register (t0);
 SamplerState cubeMapSampler : register (s0);
 
-static const float PI = 3.14159265359;
+static const float PI = 3.14159265359f;
 
 
 float distributeGGX(float3 normals, float3 halfWayVector, float roughness)
 {
     float a = roughness * roughness;
-    float a2 = a * a;
     float NdotH = max(dot(normals, halfWayVector), 0.0);
     float NdotH2 = NdotH * NdotH;
 
-    float nom = a2;
-    float denom = (NdotH2 * (a2 - 1.0) + 1.0);
+    float nom = a;
+    float denom = (NdotH2 * (nom - 1.0) + 1.0);
     denom = PI * denom * denom;
 
     return nom / denom;
@@ -83,8 +83,9 @@ float3 processPointLight(PointLight light, float3 normals, float3 fragmentPositi
                          float3 startFresnelSchlick, float roughness, float metallic, float3 albedo)
 {
     float3 processedLightPos = normalize(light.position - fragmentPosition);
-    float3 halfWay = normalize(worldViewVector + processedLightPos);
     float distance = length(light.position - fragmentPosition);
+    float3 halfWay = normalize((worldViewVector + processedLightPos)/2.0f);
+    
     float attenuation = clamp(1.0 / (distance * distance), 0.01, 1.0f);
     float3 radiance = float3(1, 1, 1)* light.intensity *attenuation;
 
@@ -92,7 +93,7 @@ float3 processPointLight(PointLight light, float3 normals, float3 fragmentPositi
     float geometrySmith = smithGeometry(normals, worldViewVector, processedLightPos, roughness);
     
     
-    float3 fresnelSchlick = fresnelFunctionMetal(albedo, startFresnelSchlick, normalize((worldViewVector + processedLightPos/length(processedLightPos)) / 2.0f), worldViewVector, metallic);
+    float3 fresnelSchlick = fresnelFunctionMetal(albedo, startFresnelSchlick, halfWay, worldViewVector, metallic);
 
     float3 numerator = float3(0, 0, 0);
     float denominator = 1;
@@ -140,10 +141,7 @@ float3 processPointLight(PointLight light, float3 normals, float3 fragmentPositi
 float4 main(PixelShaderInput psInput) : SV_Target
 {
     float3 normal = normalize(psInput.normal);
-    //Extract to constant buffer
-
-    //
-    float3 worldViewVector = normalize(cameraPosition - psInput.position);
+    float3 worldViewVector = normalize(cameraPosition - psInput.worldPos);
     float3 color = float3(0.01, 0.01, 0.01)+psInput.color;
     
     float3 startFresnelSchlick = float3(0.04, 0.04, 0.04);
@@ -151,7 +149,7 @@ float4 main(PixelShaderInput psInput) : SV_Target
     float3 Lo = float3(0, 0, 0);
     for (uint i = 0; i < 3; i++)
     {
-        Lo += processPointLight(lightsInfos[i], normal, psInput.position, worldViewVector, startFresnelSchlick,
+        Lo += processPointLight(lightsInfos[i], normal, psInput.worldPos, worldViewVector, startFresnelSchlick,
                                 roughness, metallic, color);
     }
 
