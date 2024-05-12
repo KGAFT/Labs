@@ -2,19 +2,137 @@
 
 #include "../DXShader/Shader.h"
 #include "../DXDevice/DXDevice.h"
+#include "../Utils/FileSystemUtils.h"
+#include "../STB/stb_image.h"
+
+struct HDRCubemap
+{
+    ID3D11Texture2D* sourceTexture;
+    ID3D11ShaderResourceView* sourceResourceView;
+    ID3D11Texture2D* cubemapTexture;
+    ID3D11ShaderResourceView* cubemapSRV;
+};
+
+struct Quad
+{
+    VertexBuffer* quadMeshVertex;
+    IndexBuffer* quadMeshIndex;
+
+    VertexBuffer* quadIrradianceVertex = nullptr;
+    IndexBuffer* quadIrradianceIndex = nullptr;
+};
+
+struct ViewMat
+{
+    XMMATRIX viewProjMatrix;
+};
 
 class CubemapGenerator
 {
+public:
+    CubemapGenerator(DXDevice* device)
+        : device(device)
+    {
+        loadShaders();
+        loadQuad();
+        viewMatrices = {
+            DirectX::XMMatrixLookToLH(
+                DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f),
+                DirectX::XMVectorSet(1.0f, 0.0f, 0.0f, 0.0f),
+                DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f)
+            ),
+            DirectX::XMMatrixLookToLH(
+                DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f),
+                DirectX::XMVectorSet(-1.0f, 0.0f, 0.0f, 0.0f),
+                DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f)
+            ),
+            DirectX::XMMatrixLookToLH(
+                DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f),
+                DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f),
+                DirectX::XMVectorSet(0.0f, 0.0f, -1.0f, 0.0f)
+            ),
+            DirectX::XMMatrixLookToLH(
+                DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f),
+                DirectX::XMVectorSet(0.0f, -1.0f, 0.0f, 0.0f),
+                DirectX::XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f)
+            ),
+            DirectX::XMMatrixLookToLH(
+                DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f),
+                DirectX::XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f),
+                DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f)
+            ),
+            DirectX::XMMatrixLookToLH(
+                DirectX::XMVectorSet(0.0f, 0.0f, 0.0f, 0.0f),
+                DirectX::XMVectorSet(0.0f, 0.0f, -1.0f, 0.0f),
+                DirectX::XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f)
+            ),
+        };
+        viewProjMatrixBuff = new ConstantBuffer(device->getDevice(), &data, sizeof(ViewMat));
+
+        D3D11_SAMPLER_DESC desc = {};
+        desc.Filter = D3D11_FILTER_ANISOTROPIC;
+        desc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+        desc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+        desc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+        desc.MinLOD = -FLT_MAX;
+        desc.MaxLOD = FLT_MAX;
+        desc.MipLODBias = 0.0f;
+        desc.MaxAnisotropy = 16;
+        desc.ComparisonFunc = D3D11_COMPARISON_NEVER;
+        desc.BorderColor[0] = desc.BorderColor[1] = desc.BorderColor[2] = desc.BorderColor[3] = 1.0f;
+        if(FAILED(device->getDevice()->CreateSamplerState(&desc, &sampler)))
+        {
+            throw std::runtime_error("Failed to load sampler");
+        }
+    }
+
 private:
     Shader* cubemapConvertShader = nullptr;
     Shader* irradianceGenerator = nullptr;
     DXDevice* device;
 
-    HRESULT createCubemapTexture(UINT size, const std::string& key)
-{
-    ID3D11Texture2D* cubemapTexture = nullptr;
-    ID3D11ShaderResourceView* cubemapSRV = nullptr;
-    HRESULT result;
+
+    std::vector<Quad> quads;
+
+    ID3D11SamplerState* sampler;
+    std::vector<XMMATRIX> viewMatrices;
+    ConstantBuffer* viewProjMatrixBuff = nullptr;
+    ViewMat data{};
+    XMMATRIX projectionMatrix = XMMatrixPerspectiveFovLH(XM_PI / 2, 1.0f, 0.1f, 10.0f);
+public:
+    void loadHDRCubemap(std::string name, HDRCubemap* pOutput)
+    {
+        uint32_t sideSize = 0;
+        loadHDRMap(name, &sideSize, &pOutput->sourceTexture, &pOutput->sourceResourceView);
+        createCubemap(pOutput, sideSize);
+        DXRenderTargetView* rtv = new DXRenderTargetView(device->getDevice(), pOutput->cubemapTexture, sideSize,
+                                                         sideSize, 6, "Cube rendertarget view");
+        renderCube(rtv, pOutput->sourceResourceView, sideSize);
+    }
+
+private:
+    void renderCube(DXRenderTargetView* cubeRenderTargetView, ID3D11ShaderResourceView* pSourceResourceView,
+                    uint32_t sideSize)
+    {
+        for (uint32_t i = 0; i < 6; i++)
+        {
+            cubeRenderTargetView->clearColorAttachments(device->getDeviceContext(), 0.25, 0.25, 0.25, 1.0, i);
+            cubeRenderTargetView->bind(device->getDeviceContext(), sideSize, sideSize, i, false);
+            cubemapConvertShader->bind(device->getDeviceContext());
+            device->getDeviceContext()->PSSetShaderResources(0, 1, &pSourceResourceView);
+            device->getDeviceContext()->PSSetSamplers(0, 1, &sampler);
+            device->getDeviceContext()->OMSetDepthStencilState(nullptr, 0);
+            device->getDeviceContext()->RSSetState(nullptr);
+            device->getDeviceContext()->OMSetBlendState(nullptr, nullptr, 0xFFFFFFFF);
+            data.viewProjMatrix = XMMatrixMultiply(viewMatrices[i], projectionMatrix);
+            viewProjMatrixBuff->updateData(device->getDeviceContext(), &data);
+            viewProjMatrixBuff->bindToVertexShader(device->getDeviceContext());
+            cubemapConvertShader->draw(device->getDeviceContext(), quads[i].quadMeshIndex, quads[i].quadMeshVertex);
+        }
+        DXDevice::unBindRenderTargets(device->getDeviceContext());
+    }
+
+    void createCubemap(HDRCubemap* pOutput, uint32_t size)
     {
         D3D11_TEXTURE2D_DESC textureDesc = {};
 
@@ -29,94 +147,213 @@ private:
         textureDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
         textureDesc.CPUAccessFlags = 0;
         textureDesc.MiscFlags = D3D11_RESOURCE_MISC_GENERATE_MIPS | D3D11_RESOURCE_MISC_TEXTURECUBE;
-        result = device_->CreateTexture2D(&textureDesc, 0, &cubemapTexture);
-    }
-
-    if (SUCCEEDED(result))
-    {
-        D3D11_RENDER_TARGET_VIEW_DESC rtvDesc;
-        rtvDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-        rtvDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2DARRAY;
-        rtvDesc.Texture2DArray.MipSlice = 0;
-        // Only create a view to one array element.
-        rtvDesc.Texture2DArray.ArraySize = 1;
-        for (int i = 0; i < 6 && SUCCEEDED(result); ++i)
+        if (FAILED(device->getDevice()->CreateTexture2D(&textureDesc, 0, &pOutput->cubemapTexture)))
         {
-            // Create a render target view to the ith element.
-            rtvDesc.Texture2DArray.FirstArraySlice = i;
-            result = device_->CreateRenderTargetView(cubemapTexture, &rtvDesc, &cubemapRTV[i]);
+            throw std::runtime_error("Failed to create resulting cubemap texture");
         }
-    }
 
-    if (SUCCEEDED(result))
-    {
         D3D11_SHADER_RESOURCE_VIEW_DESC shaderResourceViewDesc;
         shaderResourceViewDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
         shaderResourceViewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURECUBE;
         shaderResourceViewDesc.Texture2D.MostDetailedMip = 0;
         shaderResourceViewDesc.Texture2D.MipLevels = 1;
 
-        result = device_->CreateShaderResourceView(cubemapTexture, &shaderResourceViewDesc, &cubemapSRV);
+        device->getDevice()->CreateShaderResourceView(pOutput->cubemapTexture, &shaderResourceViewDesc,
+                                                      &pOutput->cubemapSRV);
     }
 
-    if (SUCCEEDED(result))
+    void loadHDRMap(std::string name, uint32_t* pSizeOutput, ID3D11Texture2D** ppTextureResult,
+                    ID3D11ShaderResourceView** ppResourceViewRes)
     {
-        textureManager_.setDevice(device_);
-        textureManager_.setDeviceContext(deviceContext_);
-        result = textureManager_.loadTexture(cubemapTexture, cubemapSRV, key);
+        auto workDir = FileSystemUtils::getCurrentDirectoryPath();
+
+        std::string filePath(workDir.begin(), workDir.end());
+        filePath += name;
+        int width, height, nrComponents;
+        float* data = stbi_loadf(filePath.c_str(), &width, &height, &nrComponents, 4);
+
+        if (!data)
+        {
+            throw std::runtime_error("Failed to load hdr");
+        }
+
+        *pSizeOutput = min(width, height);
+        D3D11_TEXTURE2D_DESC textureDesc = {};
+
+        textureDesc.Width = width;
+        textureDesc.Height = height;
+        textureDesc.MipLevels = 1;
+        textureDesc.ArraySize = 1;
+        textureDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+        textureDesc.SampleDesc.Count = 1;
+        textureDesc.Usage = D3D11_USAGE_DEFAULT;
+        textureDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+        textureDesc.CPUAccessFlags = 0;
+        textureDesc.MiscFlags = 0;
+
+        D3D11_SUBRESOURCE_DATA initData;
+        initData.pSysMem = data;
+        initData.SysMemPitch = width * sizeof(float) * 4;
+        initData.SysMemSlicePitch = width * height * sizeof(float) * 4;
+
+        HRESULT result = device->getDevice()->CreateTexture2D(&textureDesc, &initData, ppTextureResult);
+
+        if (SUCCEEDED(result))
+        {
+            D3D11_SHADER_RESOURCE_VIEW_DESC descSRV = {};
+            descSRV.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+            descSRV.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+            descSRV.Texture2D.MipLevels = 1;
+            descSRV.Texture2D.MostDetailedMip = 0;
+            result = device->getDevice()->CreateShaderResourceView(*ppTextureResult, &descSRV, ppResourceViewRes);
+        }
+        else
+        {
+            throw std::runtime_error("Failed to create cubemap texture");
+        }
+        stbi_image_free(data);
     }
 
-    return result;
-}
+    void loadShaders()
+    {
+        ShaderCreateInfo createInfos[2];
+        createInfos[0].shaderName = "CubeSideVS";
+        createInfos[0].pathToShader = L"Shaders/CubemapGen/CubeSideVS.hlsl";
+        createInfos[0].shaderType = ShaderType::VERTEX_SHADER;
 
-HRESULT renderToCubeMap(UINT size, int num)
-{
-    deviceContext_->OMSetRenderTargets(1, &cubemapRTV[num], nullptr);
+        createInfos[1].shaderName = "HDRToCube";
+        createInfos[1].pathToShader = L"Shaders/CubemapGen/HDRToCubePS.hlsl";
+        createInfos[1].shaderType = ShaderType::PIXEL_SHADER;
+        cubemapConvertShader = Shader::loadShader(device->getDevice(), createInfos, 2);
+        ShaderVertexInput vertexInputs[1];
+        vertexInputs[0].inputFormat = DXGI_FORMAT_R32G32B32_FLOAT;
+        vertexInputs[0].variableIndex = 0;
+        vertexInputs[0].vertexSize = sizeof(float) * 3;
+        vertexInputs[0].shaderVariableName = "POSITION";
+        cubemapConvertShader->makeInputLayout(vertexInputs, 1);
+        createInfos[1].shaderName = "irradianceCube";
+        createInfos[1].pathToShader = L"Shaders/CubemapGen/irradianceCube.hlsl";
+        irradianceGenerator = Shader::loadShader(device->getDevice(), createInfos, 2);
+        irradianceGenerator->makeInputLayout(vertexInputs, 1);
+    }
 
-    std::shared_ptr<ID3D11PixelShader> ps;
-    std::shared_ptr<ID3D11VertexShader> vs;
-    HRESULT result = PSManager_.get("copyToCubemapPS", ps);
-    if (!SUCCEEDED(result))
-        return result;
-    result = VSManager_.get("mapping", vs);
-    if (!SUCCEEDED(result))
-        return result;
+    void loadQuad()
+    {
+        quads.push_back({
+            cubemapConvertShader->createVertexBuffer(device->getDevice(), sizeof(quadVerticesXPos),
+                                                     sizeof(float) * 3, quadVerticesXPos),
+            cubemapConvertShader->createIndexBuffer(device->getDevice(), quadIndicesXPos, 6),
+            irradianceGenerator->createVertexBuffer(device->getDevice(), sizeof(quadVerticesXPos),
+                                                    sizeof(float) * 3, quadVerticesXPos),
+            irradianceGenerator->createIndexBuffer(device->getDevice(), quadIndicesXPos, 6)
+        });
 
-    D3D11_VIEWPORT viewport;
-    viewport.TopLeftX = 0;
-    viewport.TopLeftY = 0;
-    viewport.Width = size;
-    viewport.Height = size;
-    viewport.MinDepth = 0.0f;
-    viewport.MaxDepth = 1.0f;
-    deviceContext_->RSSetViewports(1, &viewport);
+        quads.push_back({
+            cubemapConvertShader->createVertexBuffer(device->getDevice(), sizeof(quadVerticesXNeg),
+                                                     sizeof(float) * 3, quadVerticesXNeg),
+            cubemapConvertShader->createIndexBuffer(device->getDevice(), quadIndicesXNeg, 6),
+            irradianceGenerator->createVertexBuffer(device->getDevice(), sizeof(quadVerticesXNeg),
+                                                    sizeof(float) * 3, quadVerticesXNeg),
+            irradianceGenerator->createIndexBuffer(device->getDevice(), quadIndicesXNeg, 6)
+        });
 
-    std::shared_ptr<ID3D11SamplerState> sampler;
-    result = samplerManager_.get("default", sampler);
-    if (!SUCCEEDED(result))
-        return result;
+        quads.push_back({
+            cubemapConvertShader->createVertexBuffer(device->getDevice(), sizeof(quadVerticesYPos),
+                                                     sizeof(float) * 3, quadVerticesYPos),
+            cubemapConvertShader->createIndexBuffer(device->getDevice(), quadIndicesYPos, 6),
+            irradianceGenerator->createVertexBuffer(device->getDevice(), sizeof(quadVerticesYPos),
+                                                    sizeof(float) * 3, quadVerticesYPos),
+            irradianceGenerator->createIndexBuffer(device->getDevice(), quadIndicesYPos, 6)
+        });
 
-    ID3D11SamplerState* samplers[] = {
-        sampler.get()
+        quads.push_back({
+            cubemapConvertShader->createVertexBuffer(device->getDevice(), sizeof(quadVerticesYNeg),
+                                                     sizeof(float) * 3, quadVerticesYNeg),
+            cubemapConvertShader->createIndexBuffer(device->getDevice(), quadIndicesYNeg, 6),
+            irradianceGenerator->createVertexBuffer(device->getDevice(), sizeof(quadVerticesYNeg),
+                                                    sizeof(float) * 3, quadVerticesYNeg),
+            irradianceGenerator->createIndexBuffer(device->getDevice(), quadIndicesYNeg, 6)
+        });
+
+        quads.push_back({
+            cubemapConvertShader->createVertexBuffer(device->getDevice(), sizeof(quadVerticesZPos),
+                                                     sizeof(float) * 3, quadVerticesZPos),
+            cubemapConvertShader->createIndexBuffer(device->getDevice(), quadIndicesZPos, 6),
+            irradianceGenerator->createVertexBuffer(device->getDevice(), sizeof(quadVerticesZPos),
+                                                    sizeof(float) * 3, quadVerticesZPos),
+            irradianceGenerator->createIndexBuffer(device->getDevice(), quadIndicesZPos, 6)
+        });
+
+        quads.push_back({
+            cubemapConvertShader->createVertexBuffer(device->getDevice(), sizeof(quadVerticesZNeg),
+                                                     sizeof(float) * 3, quadVerticesZNeg),
+            cubemapConvertShader->createIndexBuffer(device->getDevice(), quadIndicesZNeg, 6),
+            irradianceGenerator->createVertexBuffer(device->getDevice(), sizeof(quadVerticesZNeg),
+                                                    sizeof(float) * 3, quadVerticesZNeg),
+            irradianceGenerator->createIndexBuffer(device->getDevice(), quadIndicesZNeg, 6)
+        });
+    }
+
+    static inline float quadVerticesXPos[]
+    {
+        0.5f, -0.5f, 0.5f,
+        0.5f, -0.5f, -0.5f,
+        0.5f, 0.5f, -0.5f,
+        0.5f, 0.5f, 0.5f
     };
-    deviceContext_->PSSetSamplers(0, 1, samplers);
-
-    ID3D11ShaderResourceView* resources[] = {
-        subSRV
+    static inline uint32_t quadIndicesXPos[]
+    {
+        3, 2, 1, 0, 3, 1
     };
-    deviceContext_->PSSetShaderResources(0, 1, resources);
-    deviceContext_->OMSetDepthStencilState(nullptr, 0);
-    deviceContext_->RSSetState(nullptr);
-    deviceContext_->OMSetBlendState(nullptr, nullptr, 0xFFFFFFFF);
-    deviceContext_->IASetInputLayout(nullptr);
-    deviceContext_->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    deviceContext_->VSSetShader(vs.get(), nullptr, 0);
-    deviceContext_->PSSetShader(ps.get(), nullptr, 0);
-    deviceContext_->Draw(6, 0);
 
-    resources[0] = nullptr;
-    deviceContext_->PSSetShaderResources(0, 1, resources);
-
-    return result;
-}
+    static inline float quadVerticesXNeg[]{
+        -0.5f, -0.5f, 0.5f,
+        -0.5f, -0.5f, -0.5f,
+        -0.5f, 0.5f, -0.5f,
+        -0.5f, 0.5f, 0.5f
+    };
+    static inline uint32_t quadIndicesXNeg[]{
+        0, 1, 2, 3, 0, 2
+    };
+    static inline float quadVerticesYPos[]{
+        -0.5f, 0.5f, 0.5f,
+        0.5f, 0.5f, -0.5f,
+        -0.5f, 0.5f, -0.5f,
+        0.5f, 0.5f, 0.5f
+    };
+    static inline uint32_t quadIndicesYPos[]{
+        3, 0, 2, 1, 3, 2
+    };
+    static inline float quadVerticesYNeg[]
+    {
+        -0.5f, -0.5f, 0.5f,
+        0.5f, -0.5f, -0.5f,
+        -0.5f, -0.5f, -0.5f,
+        0.5f, -0.5f, 0.5f
+    };
+    static inline uint32_t quadIndicesYNeg[]
+    {
+        3, 1, 2, 0, 3, 2
+    };
+    static inline float quadVerticesZPos[]
+    {
+        -0.5f, 0.5f, 0.5f,
+        0.5f, 0.5f, 0.5f,
+        0.5f, -0.5f, 0.5f,
+        -0.5f, -0.5f, 0.5f
+    };
+    static inline uint32_t quadIndicesZPos[]
+    {
+        0, 1, 2, 3, 0, 2
+    };
+    static inline float quadVerticesZNeg[]
+    {
+        -0.5f, -0.5f, -0.5f,
+        0.5f, -0.5f, -0.5f,
+        -0.5f, 0.5f, -0.5f,
+        0.5f, 0.5f, -0.5f
+    };
+    static inline uint32_t quadIndicesZNeg[]{
+        1, 3, 2, 0, 1, 2
+    };
 };

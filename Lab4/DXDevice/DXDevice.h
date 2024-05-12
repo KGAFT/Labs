@@ -23,6 +23,7 @@ public:
 	DXSwapChain* getSwapChain(Window* window, const char* possibleName = nullptr);
 	ID3D11DeviceContext* getDeviceContext();
 	ID3D11Device* getDevice();
+	static void unBindRenderTargets(ID3D11DeviceContext* context);
 private:
 	DXSwapChain* createSwapChain(Window* window, const char* possibleName = nullptr);
 	void initializeDxgi();

@@ -71,7 +71,6 @@ public:
     DXRenderTargetView* getRendertargetView();
 
     void clearRenderTarget(ID3D11DeviceContext* deviceContext, uint32_t currentImage);
-    void unBindRenderTargets(ID3D11DeviceContext* context);
     void destroy();
 private:
     void createTextures(uint32_t width, uint32_t height, uint32_t imagesInSwapChainAmount);

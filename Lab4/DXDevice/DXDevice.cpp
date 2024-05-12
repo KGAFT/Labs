@@ -83,6 +83,15 @@ void DXDevice::initializeDxgi() {
 		throw std::runtime_error("Failed to query dxgi factory");
 }
 
+ID3D11RenderTargetView* unBindRtvs[5] = {0, 0, 0, 0, 0};
+ID3D11ShaderResourceView* unBindresourceViews[5] = {0, 0, 0, 0, 0};
+
+void DXDevice::unBindRenderTargets(ID3D11DeviceContext* context)
+{
+	context->OMSetRenderTargets(5, unBindRtvs, NULL);
+	context->PSSetShaderResources(0, 5, unBindresourceViews);
+}
+
 ID3D11DeviceContext* DXDevice::getDeviceContext() {
 	return deviceContext;
 }

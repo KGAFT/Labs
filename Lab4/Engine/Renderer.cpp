@@ -7,6 +7,8 @@
 #include "../ImGUI/imgui_impl_dx11.h"
 #include "../ImGUI/imgui_impl_win32.h"
 #include <DDSTextureLoader.h>
+
+#include "CubemapGenerator.h"
 #include "tiny_obj_loader.h"
 #include "../STB/stb_image.h"
 #include "../Utils/FileSystemUtils.h"
@@ -167,7 +169,7 @@ void Renderer::drawFrame()
     toneMapper->postProcessToneMap(device.getDeviceContext(), swapChain->getCurrentImage());
     ImGui::Render();
     ImGui_ImplDX11_RenderDrawData(ImGui::GetDrawData());
-    toneMapper->unBindRenderTargets(device.getDeviceContext());
+    DXDevice::unBindRenderTargets(device.getDeviceContext());
     swapChain->present(true);
 }
 
@@ -397,49 +399,11 @@ void Renderer::loadImgui()
 
 void Renderer::loadCubeMap()
 {
-    auto workDir = FileSystemUtils::getCurrentDirectoryPath();
-    workDir += L"hdrbox.hdr";
-
-    std::string filePath( workDir.begin(), workDir.end() );
-    int width, height, nrComponents;
-    float* data = stbi_loadf(filePath.c_str(), &width, &height, &nrComponents, 4);
-
-    if(!data)
-    {
-        throw std::runtime_error("Failed to load hdr");
-    }
-
-    D3D11_TEXTURE2D_DESC textureDesc = {};
-
-    textureDesc.Width = width;
-    textureDesc.Height = height;
-    textureDesc.MipLevels = 1;
-    textureDesc.ArraySize = 1;
-    textureDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-    textureDesc.SampleDesc.Count = 1;
-    textureDesc.Usage = D3D11_USAGE_DEFAULT;
-    textureDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
-    textureDesc.CPUAccessFlags = 0;
-    textureDesc.MiscFlags = 0;
-
-    D3D11_SUBRESOURCE_DATA initData;
-    initData.pSysMem = data;
-    initData.SysMemPitch = width * sizeof(float) * 4;
-    initData.SysMemSlicePitch = width * height * sizeof(float) * 4;
-
-    HRESULT result = device.getDevice()->CreateTexture2D(&textureDesc, &initData, &cubeMapTexture);
-
-    if (SUCCEEDED(result))
-    {
-        D3D11_SHADER_RESOURCE_VIEW_DESC descSRV = {};
-        descSRV.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-        descSRV.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-        descSRV.Texture2D.MipLevels = 1;
-        descSRV.Texture2D.MostDetailedMip = 0;
-        result = device.getDevice()->CreateShaderResourceView(cubeMapTexture, &descSRV, &cubeMapTextureResourceView);
-    } else
-    {
-        throw std::runtime_error("Failed to create cubemap texture");
-    }
-    stbi_image_free(data);
+    CubemapGenerator generator(&device);
+    HDRCubemap cubemap{};
+    generator.loadHDRCubemap("hdr_room.hdr", &cubemap);
+    cubeMapTexture = cubemap.cubemapTexture;
+    cubeMapTextureResourceView = cubemap.cubemapSRV;
+    cubemap.sourceTexture->Release();
+    cubemap.sourceResourceView->Release();
 }

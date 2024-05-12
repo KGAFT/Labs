@@ -1,12 +1,7 @@
 ﻿#include "ToneMapper.h"
-ID3D11RenderTargetView* unBindRtvs[5] = {0, 0, 0, 0, 0};
-ID3D11ShaderResourceView* unBindresourceViews[5] = {0, 0, 0, 0, 0};
 
-void ToneMapper::unBindRenderTargets(ID3D11DeviceContext* context)
-{
-    context->OMSetRenderTargets(5, unBindRtvs, NULL);
-    context->PSSetShaderResources(0, 5, unBindresourceViews);
-}
+#include "../DXDevice/DXDevice.h"
+
 
 void ToneMapper::destroy()
 {
@@ -25,7 +20,6 @@ void ToneMapper::destroy()
 void ToneMapper::initialize(uint32_t width,
                             uint32_t height, uint32_t imageInSwapChain)
 {
-
     createTextures(width, height, imageInSwapChain);
     HRESULT result = 0;
 
@@ -173,7 +167,7 @@ void ToneMapper::makeBrightnessMaps(ID3D11DeviceContext* deviceContext, uint32_t
         deviceContext->PSSetShader(i == scaledTexturesAmount ? brightnessPS : downsamplePS, nullptr, 0);
         deviceContext->Draw(6, 0);
 
-        unBindRenderTargets(deviceContext);
+        DXDevice::unBindRenderTargets(deviceContext);
     }
 #ifdef _DEBUG
     annotations->EndEvent();
@@ -182,7 +176,6 @@ void ToneMapper::makeBrightnessMaps(ID3D11DeviceContext* deviceContext, uint32_t
 
 void ToneMapper::postProcessToneMap(ID3D11DeviceContext* deviceContext, uint32_t currentImage)
 {
-
 #ifdef _DEBUG
     annotations->BeginEvent(L"Tone mapping");
 #endif
@@ -250,8 +243,6 @@ DXRenderTargetView* ToneMapper::getRendertargetView()
 
 void ToneMapper::clearRenderTarget(ID3D11DeviceContext* deviceContext, uint32_t currentImage)
 {
-
-
     rtv->clearColorAttachments(deviceContext, 0.25f, 0.25f, 0.25f, 1.0f, currentImage);
     rtv->clearDepthAttachments(deviceContext);
     float color[4] = {0.25f, 0.25f, 0.25f, 1.0f};
@@ -268,7 +259,8 @@ void ToneMapper::createTextures(uint32_t width, uint32_t height, uint32_t images
 {
     if (!rtv)
     {
-        rtv = new DXRenderTargetView(device, imagesInSwapChainAmount, width, height, "Frame for brightness map postprocess");
+        rtv = new DXRenderTargetView(device, imagesInSwapChainAmount, width, height,
+                                     "Frame for brightness map postprocess");
     }
     else
     {
