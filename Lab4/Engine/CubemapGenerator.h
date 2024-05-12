@@ -338,7 +338,25 @@ private:
             irradianceGenerator->createIndexBuffer(device->getDevice(), quadIndicesZNeg, 6)
         });
     }
+public:
+    void destroy()
+    {
+        for (auto value : quads)
+        {
+            delete value.quadIrradianceIndex;
+            delete value.quadIrradianceVertex;
+            delete value.quadMeshIndex;
+            delete value.quadMeshVertex;
+        }
+        sampler->Release();
+        delete viewProjMatrixBuff;
+        delete irradianceGenerator;
+        delete cubemapConvertShader;
+    }
 
+  
+
+private:
     static inline float quadVerticesXPos[]
     {
         0.5f, -0.5f, 0.5f,

@@ -46,7 +46,9 @@ DXRenderTargetView::DXRenderTargetView(ID3D11Device* device, std::vector<ID3D11T
 
 DXRenderTargetView::DXRenderTargetView(ID3D11Device* device, ID3D11Texture2D* textureArray, uint32_t width,
                                        uint32_t height, uint32_t elementAmount,
-                                       const char* name) : device(device), vp(D3D11_VIEWPORT{800.0f, 600.0f, 0.0, 1.0f})
+                                       const char* name) : device(device),
+                                                           vp(D3D11_VIEWPORT{800.0f, 600.0f, 0.0, 1.0f}),
+                                                           depthCreatedInside(true)
 {
     colorAttachments.push_back(textureArray);
     createDepthAttachment(width, height);
@@ -79,7 +81,8 @@ void DXRenderTargetView::clearDepthAttachments(ID3D11DeviceContext* context)
     context->ClearDepthStencilView(depthView, D3D11_CLEAR_DEPTH | D3D11_CLEAR_STENCIL, 1.0f, 0);
 }
 
-void DXRenderTargetView::bind(ID3D11DeviceContext* context, uint32_t width, uint32_t height, int curImage, bool bindDepthImages)
+void DXRenderTargetView::bind(ID3D11DeviceContext* context, uint32_t width, uint32_t height, int curImage,
+                              bool bindDepthImages)
 {
     vp.Width = (FLOAT)width;
     vp.Height = (FLOAT)height;
@@ -88,7 +91,8 @@ void DXRenderTargetView::bind(ID3D11DeviceContext* context, uint32_t width, uint
     context->RSSetViewports(1, &vp);
     if (curImage < 0)
     {
-        context->OMSetRenderTargets((UINT)renderTargetViews.size(), renderTargetViews.data(),bindDepthImages ? depthView : nullptr);
+        context->OMSetRenderTargets((UINT)renderTargetViews.size(), renderTargetViews.data(),
+                                    bindDepthImages ? depthView : nullptr);
     }
     else
     {
@@ -180,7 +184,7 @@ void DXRenderTargetView::resize(std::vector<ID3D11Texture2D*> colorAttachment, I
 }
 
 void DXRenderTargetView::resize(ID3D11Texture2D* textureArray, uint32_t width, uint32_t height, uint32_t elementAmount,
-    const char* name)
+                                const char* name)
 {
     colorAttachments[0] = textureArray;
     createDepthAttachment(width, height);

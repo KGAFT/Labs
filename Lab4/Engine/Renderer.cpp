@@ -411,4 +411,5 @@ void Renderer::loadCubeMap()
     irradianceTextureResourceView = cubemap.irradianceSRV;
     cubemap.sourceTexture->Release();
     cubemap.sourceResourceView->Release();
+    generator.destroy();
 }
