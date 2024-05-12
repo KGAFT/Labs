@@ -11,6 +11,9 @@ struct HDRCubemap
     ID3D11ShaderResourceView* sourceResourceView;
     ID3D11Texture2D* cubemapTexture;
     ID3D11ShaderResourceView* cubemapSRV;
+
+    ID3D11Texture2D* irradianceTexture;
+    ID3D11ShaderResourceView* irradianceSRV;
 };
 
 struct Quad
@@ -103,11 +106,18 @@ public:
     void loadHDRCubemap(std::string name, HDRCubemap* pOutput)
     {
         uint32_t sideSize = 0;
+        uint32_t irradianceSideSize = 0;
         loadHDRMap(name, &sideSize, &pOutput->sourceTexture, &pOutput->sourceResourceView);
-        createCubemap(pOutput, sideSize);
+        irradianceSideSize = 32;
+        createCubemap(pOutput, sideSize, irradianceSideSize);
         DXRenderTargetView* rtv = new DXRenderTargetView(device->getDevice(), pOutput->cubemapTexture, sideSize,
                                                          sideSize, 6, "Cube rendertarget view");
+        DXRenderTargetView* irradianceRTV = new DXRenderTargetView(device->getDevice(), pOutput->irradianceTexture, sideSize,
+                                                        sideSize, 6, "Cube rendertarget view");
         renderCube(rtv, pOutput->sourceResourceView, sideSize);
+        renderIrradianceCube(irradianceRTV, pOutput->cubemapSRV, irradianceSideSize);
+        rtv->destroy();
+        irradianceRTV->destroy();
     }
 
 private:
@@ -132,7 +142,27 @@ private:
         DXDevice::unBindRenderTargets(device->getDeviceContext());
     }
 
-    void createCubemap(HDRCubemap* pOutput, uint32_t size)
+    void renderIrradianceCube(DXRenderTargetView* cubeRenderTargetView, ID3D11ShaderResourceView* pSourceResourceView,
+                    uint32_t sideSize)
+    {
+        for (uint32_t i = 0; i < 6; i++)
+        {
+            cubeRenderTargetView->clearColorAttachments(device->getDeviceContext(), 0.25, 0.25, 0.25, 1.0, i);
+            cubeRenderTargetView->bind(device->getDeviceContext(), sideSize, sideSize, i, false);
+            irradianceGenerator->bind(device->getDeviceContext());
+            device->getDeviceContext()->PSSetShaderResources(0, 1, &pSourceResourceView);
+            device->getDeviceContext()->PSSetSamplers(0, 1, &sampler);
+            device->getDeviceContext()->OMSetDepthStencilState(nullptr, 0);
+            device->getDeviceContext()->RSSetState(nullptr);
+            device->getDeviceContext()->OMSetBlendState(nullptr, nullptr, 0xFFFFFFFF);
+            data.viewProjMatrix = XMMatrixMultiply(viewMatrices[i], projectionMatrix);
+            viewProjMatrixBuff->updateData(device->getDeviceContext(), &data);
+            viewProjMatrixBuff->bindToVertexShader(device->getDeviceContext());
+            irradianceGenerator->draw(device->getDeviceContext(), quads[i].quadIrradianceIndex, quads[i].quadIrradianceVertex);
+        }
+        DXDevice::unBindRenderTargets(device->getDeviceContext());
+    }
+    void createCubemap(HDRCubemap* pOutput, uint32_t size, uint32_t irradianceSideSize)
     {
         D3D11_TEXTURE2D_DESC textureDesc = {};
 
@@ -158,8 +188,23 @@ private:
         shaderResourceViewDesc.Texture2D.MostDetailedMip = 0;
         shaderResourceViewDesc.Texture2D.MipLevels = 1;
 
-        device->getDevice()->CreateShaderResourceView(pOutput->cubemapTexture, &shaderResourceViewDesc,
-                                                      &pOutput->cubemapSRV);
+        if(FAILED(device->getDevice()->CreateShaderResourceView(pOutput->cubemapTexture, &shaderResourceViewDesc,
+                                                      &pOutput->cubemapSRV)))
+        {
+            throw std::runtime_error("Failed to create shader resource view cubemap");
+        }
+        textureDesc.Width = irradianceSideSize;
+        textureDesc.Height = irradianceSideSize;
+
+        if (FAILED(device->getDevice()->CreateTexture2D(&textureDesc, 0, &pOutput->irradianceTexture)))
+        {
+            throw std::runtime_error("Failed to create resulting cubemap texture");
+        }
+        if(FAILED(device->getDevice()->CreateShaderResourceView(pOutput->irradianceTexture, &shaderResourceViewDesc,
+                                                      &pOutput->irradianceSRV)))
+        {
+            throw std::runtime_error("Failed to create shader resource view cubemap");
+        }
     }
 
     void loadHDRMap(std::string name, uint32_t* pSizeOutput, ID3D11Texture2D** ppTextureResult,

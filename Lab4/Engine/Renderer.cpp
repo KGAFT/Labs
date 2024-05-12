@@ -150,7 +150,7 @@ void Renderer::drawFrame()
 #endif
     shader->bind(device.getDeviceContext());
     device.getDeviceContext()->PSSetSamplers(0, 1, &sampler);
-    device.getDeviceContext()->PSSetShaderResources(0, 1, &cubeMapTextureResourceView);
+    device.getDeviceContext()->PSSetShaderResources(0, 1, &irradianceTextureResourceView);
 
     constantBuffer->bindToVertexShader(device.getDeviceContext());
     lightConstant->bindToPixelShader(device.getDeviceContext());
@@ -223,6 +223,9 @@ void Renderer::release()
     skyboxRasterState->Release();
     cubeMapTextureResourceView->Release();
     cubeMapTexture->Release();
+    
+    irradianceTextureResourceView->Release();
+    irradianceTexture->Release();
     annotation->Release();
 
     ImGui_ImplWin32_Shutdown();
@@ -404,6 +407,8 @@ void Renderer::loadCubeMap()
     generator.loadHDRCubemap("hdr_room.hdr", &cubemap);
     cubeMapTexture = cubemap.cubemapTexture;
     cubeMapTextureResourceView = cubemap.cubemapSRV;
+    irradianceTexture = cubemap.irradianceTexture;
+    irradianceTextureResourceView = cubemap.irradianceSRV;
     cubemap.sourceTexture->Release();
     cubemap.sourceResourceView->Release();
 }

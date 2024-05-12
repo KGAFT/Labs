@@ -253,9 +253,6 @@
     <CopyFileToFolders Include="Images\sphere.wvf">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </CopyFileToFolders>
-    <CopyFileToFolders Include="Images\hdrbox.hdr">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </CopyFileToFolders>
     <Content Include="Shaders\*.hlsl">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

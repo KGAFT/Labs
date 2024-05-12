@@ -86,8 +86,11 @@ private:
     IndexBuffer* sphereIndex = nullptr;
     Camera camera;
     ID3DUserDefinedAnnotation* annotation;
+    
     ID3D11Texture2D* cubeMapTexture;
     ID3D11ShaderResourceView* cubeMapTextureResourceView;
+    ID3D11Texture2D* irradianceTexture;
+    ID3D11ShaderResourceView* irradianceTextureResourceView;
 
     ID3D11DepthStencilState* skyboxDepthState;
     ID3D11RasterizerState* skyboxRasterState;

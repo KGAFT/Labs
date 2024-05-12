@@ -1,3 +1,6 @@
+TextureCube irradianceTexture : register (t0);
+SamplerState irradianceSampler : register (s0);
+
 struct PixelShaderInput
 {
     float4 position: SV_POSITION;
@@ -32,8 +35,6 @@ cbuffer Configuration: register(b1)
     float alignment;
 };
 
-TextureCube cubeMap : register (t0);
-SamplerState cubeMapSampler : register (s0);
 
 static const float PI = 3.14159265359f;
 
@@ -142,18 +143,19 @@ float4 main(PixelShaderInput psInput) : SV_Target
 {
     float3 normal = normalize(psInput.normal);
     float3 worldViewVector = normalize(cameraPosition - psInput.worldPos);
-    float3 color = float3(0.01, 0.01, 0.01)+psInput.color;
+    float3 irradiance = irradianceTexture.Sample(irradianceSampler, normal).xyz;
     
     float3 startFresnelSchlick = float3(0.04, 0.04, 0.04);
-    startFresnelSchlick = lerp(startFresnelSchlick, color, metallic);
+    startFresnelSchlick = lerp(startFresnelSchlick, irradiance, metallic);
     float3 Lo = float3(0, 0, 0);
     for (uint i = 0; i < 3; i++)
     {
         Lo += processPointLight(lightsInfos[i], normal, psInput.worldPos, worldViewVector, startFresnelSchlick,
-                                roughness, metallic, color);
+                                roughness, metallic, irradiance);
     }
+   
 
-    float3 ambient = (float3(ambientIntensity, ambientIntensity, ambientIntensity) *color);
+    float3 ambient = (float3(ambientIntensity, ambientIntensity, ambientIntensity) * irradiance);
     float3 rescolor = ambient + Lo;
     
     return float4(rescolor, 1.0f);
