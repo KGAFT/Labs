@@ -14,15 +14,16 @@ struct HDRCubemap
 
     ID3D11Texture2D* irradianceTexture;
     ID3D11ShaderResourceView* irradianceSRV;
+
+    ID3D11Texture2D* prefilteredTexture;
+    ID3D11ShaderResourceView* prefilteredSRV;
 };
 
 struct Quad
 {
     VertexBuffer* quadMeshVertex;
     IndexBuffer* quadMeshIndex;
-
-    VertexBuffer* quadIrradianceVertex = nullptr;
-    IndexBuffer* quadIrradianceIndex = nullptr;
+    
 };
 
 struct ViewMat
@@ -92,6 +93,7 @@ public:
 private:
     Shader* cubemapConvertShader = nullptr;
     Shader* irradianceGenerator = nullptr;
+    Shader* prefilterShader = nullptr;
     DXDevice* device;
 
 
@@ -158,10 +160,32 @@ private:
             data.viewProjMatrix = XMMatrixMultiply(viewMatrices[i], projectionMatrix);
             viewProjMatrixBuff->updateData(device->getDeviceContext(), &data);
             viewProjMatrixBuff->bindToVertexShader(device->getDeviceContext());
-            irradianceGenerator->draw(device->getDeviceContext(), quads[i].quadIrradianceIndex, quads[i].quadIrradianceVertex);
+            irradianceGenerator->draw(device->getDeviceContext(), quads[i].quadMeshIndex, quads[i].quadMeshVertex);
         }
         DXDevice::unBindRenderTargets(device->getDeviceContext());
     }
+
+    void renderPrefilterMap(DXRenderTargetView* cubeRenderTargetView, ID3D11ShaderResourceView* pSourceResourceView,
+                    uint32_t sideSize)
+    {
+        for (uint32_t i = 0; i < 6; i++)
+        {
+            cubeRenderTargetView->clearColorAttachments(device->getDeviceContext(), 0.25, 0.25, 0.25, 1.0, i);
+            cubeRenderTargetView->bind(device->getDeviceContext(), sideSize, sideSize, i, false);
+            prefilterShader->bind(device->getDeviceContext());
+            device->getDeviceContext()->PSSetShaderResources(0, 1, &pSourceResourceView);
+            device->getDeviceContext()->PSSetSamplers(0, 1, &sampler);
+            device->getDeviceContext()->OMSetDepthStencilState(nullptr, 0);
+            device->getDeviceContext()->RSSetState(nullptr);
+            device->getDeviceContext()->OMSetBlendState(nullptr, nullptr, 0xFFFFFFFF);
+            data.viewProjMatrix = XMMatrixMultiply(viewMatrices[i], projectionMatrix);
+            viewProjMatrixBuff->updateData(device->getDeviceContext(), &data);
+            viewProjMatrixBuff->bindToVertexShader(device->getDeviceContext());
+            prefilterShader->draw(device->getDeviceContext(), quads[i].quadMeshIndex, quads[i].quadMeshVertex);
+        }
+        DXDevice::unBindRenderTargets(device->getDeviceContext());
+    }
+    
     void createCubemap(HDRCubemap* pOutput, uint32_t size, uint32_t irradianceSideSize)
     {
         D3D11_TEXTURE2D_DESC textureDesc = {};
@@ -275,67 +299,55 @@ private:
         vertexInputs[0].variableIndex = 0;
         vertexInputs[0].vertexSize = sizeof(float) * 3;
         vertexInputs[0].shaderVariableName = "POSITION";
-        cubemapConvertShader->makeInputLayout(vertexInputs, 1);
+        cubemapConvertShader->makeInputLayout(device->getDevice(), vertexInputs, 1);
         createInfos[1].shaderName = "irradianceCube";
         createInfos[1].pathToShader = L"Shaders/CubemapGen/irradianceCube.hlsl";
         irradianceGenerator = Shader::loadShader(device->getDevice(), createInfos, 2);
-        irradianceGenerator->makeInputLayout(vertexInputs, 1);
+        irradianceGenerator->makeInputLayout(device->getDevice(),  vertexInputs, 1);
+        createInfos[1].shaderName = "prefilterer";
+        createInfos[1].pathToShader = L"Shaders/CubemapGen/prefilterCube.hlsl";
+        prefilterShader = Shader::loadShader(device->getDevice(), createInfos, 2);
+        prefilterShader->makeInputLayout(device->getDevice(),  vertexInputs, 1);
+
     }
 
     void loadQuad()
     {
         quads.push_back({
-            cubemapConvertShader->createVertexBuffer(device->getDevice(), sizeof(quadVerticesXPos),
+            new VertexBuffer(device->getDevice(), sizeof(quadVerticesXPos),
                                                      sizeof(float) * 3, quadVerticesXPos),
-            cubemapConvertShader->createIndexBuffer(device->getDevice(), quadIndicesXPos, 6),
-            irradianceGenerator->createVertexBuffer(device->getDevice(), sizeof(quadVerticesXPos),
-                                                    sizeof(float) * 3, quadVerticesXPos),
-            irradianceGenerator->createIndexBuffer(device->getDevice(), quadIndicesXPos, 6)
+            new IndexBuffer(device->getDevice(), quadIndicesXPos, 6)
         });
 
         quads.push_back({
-            cubemapConvertShader->createVertexBuffer(device->getDevice(), sizeof(quadVerticesXNeg),
+            new VertexBuffer(device->getDevice(), sizeof(quadVerticesXNeg),
                                                      sizeof(float) * 3, quadVerticesXNeg),
-            cubemapConvertShader->createIndexBuffer(device->getDevice(), quadIndicesXNeg, 6),
-            irradianceGenerator->createVertexBuffer(device->getDevice(), sizeof(quadVerticesXNeg),
-                                                    sizeof(float) * 3, quadVerticesXNeg),
-            irradianceGenerator->createIndexBuffer(device->getDevice(), quadIndicesXNeg, 6)
+            new IndexBuffer(device->getDevice(), quadIndicesXNeg, 6)
         });
 
         quads.push_back({
-            cubemapConvertShader->createVertexBuffer(device->getDevice(), sizeof(quadVerticesYPos),
+            new VertexBuffer(device->getDevice(), sizeof(quadVerticesYPos),
                                                      sizeof(float) * 3, quadVerticesYPos),
-            cubemapConvertShader->createIndexBuffer(device->getDevice(), quadIndicesYPos, 6),
-            irradianceGenerator->createVertexBuffer(device->getDevice(), sizeof(quadVerticesYPos),
-                                                    sizeof(float) * 3, quadVerticesYPos),
-            irradianceGenerator->createIndexBuffer(device->getDevice(), quadIndicesYPos, 6)
+            new IndexBuffer(device->getDevice(), quadIndicesYPos, 6),
+
         });
 
         quads.push_back({
-            cubemapConvertShader->createVertexBuffer(device->getDevice(), sizeof(quadVerticesYNeg),
+            new VertexBuffer(device->getDevice(), sizeof(quadVerticesYNeg),
                                                      sizeof(float) * 3, quadVerticesYNeg),
-            cubemapConvertShader->createIndexBuffer(device->getDevice(), quadIndicesYNeg, 6),
-            irradianceGenerator->createVertexBuffer(device->getDevice(), sizeof(quadVerticesYNeg),
-                                                    sizeof(float) * 3, quadVerticesYNeg),
-            irradianceGenerator->createIndexBuffer(device->getDevice(), quadIndicesYNeg, 6)
+            new IndexBuffer(device->getDevice(), quadIndicesYNeg, 6)
         });
 
         quads.push_back({
-            cubemapConvertShader->createVertexBuffer(device->getDevice(), sizeof(quadVerticesZPos),
+            new VertexBuffer(device->getDevice(), sizeof(quadVerticesZPos),
                                                      sizeof(float) * 3, quadVerticesZPos),
-            cubemapConvertShader->createIndexBuffer(device->getDevice(), quadIndicesZPos, 6),
-            irradianceGenerator->createVertexBuffer(device->getDevice(), sizeof(quadVerticesZPos),
-                                                    sizeof(float) * 3, quadVerticesZPos),
-            irradianceGenerator->createIndexBuffer(device->getDevice(), quadIndicesZPos, 6)
+            new IndexBuffer(device->getDevice(), quadIndicesZPos, 6),
         });
 
         quads.push_back({
-            cubemapConvertShader->createVertexBuffer(device->getDevice(), sizeof(quadVerticesZNeg),
+            new VertexBuffer(device->getDevice(), sizeof(quadVerticesZNeg),
                                                      sizeof(float) * 3, quadVerticesZNeg),
-            cubemapConvertShader->createIndexBuffer(device->getDevice(), quadIndicesZNeg, 6),
-            irradianceGenerator->createVertexBuffer(device->getDevice(), sizeof(quadVerticesZNeg),
-                                                    sizeof(float) * 3, quadVerticesZNeg),
-            irradianceGenerator->createIndexBuffer(device->getDevice(), quadIndicesZNeg, 6)
+            new IndexBuffer(device->getDevice(), quadIndicesZNeg, 6)
         });
     }
 public:
@@ -343,8 +355,6 @@ public:
     {
         for (auto value : quads)
         {
-            delete value.quadIrradianceIndex;
-            delete value.quadIrradianceVertex;
             delete value.quadMeshIndex;
             delete value.quadMeshVertex;
         }

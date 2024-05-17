@@ -38,10 +38,9 @@ private:
 	std::vector<D3D11_INPUT_ELEMENT_DESC> shaderInputs;
 	ID3DBlob* vertexShaderData;
 	ID3DBlob* pixelShaderData;
+	ID3D11InputLayout* inputLayout;
 public:
-	void makeInputLayout(ShaderVertexInput* pInputs, uint32_t inputsAmount);
-	VertexBuffer* createVertexBuffer(ID3D11Device* device, size_t dataSize, size_t stepSize, void* verticesList, const char* bufferName = nullptr);
-	IndexBuffer* createIndexBuffer(ID3D11Device* device, uint32_t* indices, uint32_t indicesCount, const char* bufferName = nullptr);
+	void makeInputLayout(ID3D11Device* device, ShaderVertexInput* pInputs, uint32_t inputsAmount);
 	void bind(ID3D11DeviceContext* deviceContext);
 	void draw(ID3D11DeviceContext* context, IndexBuffer* indexBuffer, VertexBuffer* vertexBuffer);
 	~Shader();

@@ -186,14 +186,14 @@ void Renderer::loadShader()
     vertexInputs.push_back({"NORMAL", 0, sizeof(float) * 3, DXGI_FORMAT_R32G32B32_FLOAT});
     vertexInputs.push_back({"COLOR", 0, sizeof(float) * 3, DXGI_FORMAT_R32G32B32A32_FLOAT});
 
-    shader->makeInputLayout(vertexInputs.data(), (uint32_t)vertexInputs.size());
+    shader->makeInputLayout(device.getDevice(), vertexInputs.data(), (uint32_t)vertexInputs.size());
 
 
     shadersInfos.clear();
     shadersInfos.push_back({L"Shaders/Skybox/skyboxVS.hlsl", VERTEX_SHADER, "Lab5 skybox vertex shader"});
     shadersInfos.push_back({L"Shaders/Skybox/skyboxPS.hlsl", PIXEL_SHADER, "Lab5 skybox pixel shader"});
     cubeMapShader = Shader::loadShader(device.getDevice(), shadersInfos.data(), shadersInfos.size());;
-    cubeMapShader->makeInputLayout(vertexInputs.data(), vertexInputs.size());
+    cubeMapShader->makeInputLayout(device.getDevice(), vertexInputs.data(), vertexInputs.size());
 }
 
 void Renderer::loadSphere()
@@ -202,10 +202,10 @@ void Renderer::loadSphere()
     std::vector<uint32_t> indices;
     float color[] = {0, 0.815686, 0.38431};
     makesphere3(vertices, indices, color);
-    sphereVertex = shader->createVertexBuffer(device.getDevice(), vertices.size() * sizeof(float), sizeof(float)*11,
+    sphereVertex = new VertexBuffer(device.getDevice(), vertices.size() * sizeof(float), sizeof(float)*11,
                                               vertices.data(),
                                               "Sphere vertex buffer");
-    sphereIndex = shader->createIndexBuffer(device.getDevice(), indices.data(), indices.size(),
+    sphereIndex = new IndexBuffer(device.getDevice(), indices.data(), indices.size(),
                                             "Sphere index buffer");
 }
 
