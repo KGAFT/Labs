@@ -177,6 +177,9 @@
     <CopyFileToFolders Include="Images\hdr_sky.hdr">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </CopyFileToFolders>
+    <CopyFileToFolders Include="Images\hdr_room2.hdr">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </CopyFileToFolders>
     <Content Include="Shaders\CubemapGen\irradianceCube.hlsl">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>

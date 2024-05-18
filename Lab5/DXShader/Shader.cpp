@@ -135,6 +135,11 @@ void Shader::draw(ID3D11DeviceContext* context, IndexBuffer* indexBuffer, Vertex
 
 Shader::~Shader()
 {
+    if(inputLayout)
+    {
+        inputLayout->Release();
+
+    }
     pixelShader->Release();
     vertexShader->Release();
     vertexShaderData->Release();

@@ -38,7 +38,7 @@ private:
 	std::vector<D3D11_INPUT_ELEMENT_DESC> shaderInputs;
 	ID3DBlob* vertexShaderData;
 	ID3DBlob* pixelShaderData;
-	ID3D11InputLayout* inputLayout;
+	ID3D11InputLayout* inputLayout = nullptr;
 public:
 	void makeInputLayout(ID3D11Device* device, ShaderVertexInput* pInputs, uint32_t inputsAmount);
 	void bind(ID3D11DeviceContext* deviceContext);

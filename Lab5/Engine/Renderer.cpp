@@ -213,7 +213,7 @@ void Renderer::loadSphere()
 {
     std::vector<float> vertices;
     std::vector<uint32_t> indices;
-    float color[] = {1.0, 0.70982, 0.29019};
+    float color[] = {0.541, 0, 0.82745};
     makesphere3(vertices, indices, color);
     sphereVertex = new VertexBuffer(device.getDevice(), vertices.size() * sizeof(float), sizeof(float)*11,
                                               vertices.data(),
@@ -422,7 +422,7 @@ void Renderer::loadImgui()
 void Renderer::loadCubeMap()
 {
     CubemapGenerator generator(&device);
-    generator.loadHDRCubemap("hdr_sky.hdr", &cubemap);
+    generator.loadHDRCubemap("hdr_room2.hdr", &cubemap);
 
     cubemap.sourceTexture->Release();
     cubemap.sourceResourceView->Release();

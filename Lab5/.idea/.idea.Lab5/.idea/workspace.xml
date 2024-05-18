@@ -8,9 +8,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="119b1ad0-faf3-4ec5-8626-03e696d4ab37" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/.idea.Lab5/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.Lab5/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/DXShader/Shader.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/DXShader/Shader.cpp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/DXShader/Shader.h" beforeDir="false" afterPath="$PROJECT_DIR$/DXShader/Shader.h" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Engine/Renderer.cpp" beforeDir="false" afterPath="$PROJECT_DIR$/Engine/Renderer.cpp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Shaders/Lighting/PBRPixelShader.hlsl" beforeDir="false" afterPath="$PROJECT_DIR$/Shaders/Lighting/PBRPixelShader.hlsl" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/imgui.ini" beforeDir="false" afterPath="$PROJECT_DIR$/imgui.ini" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Lab5.vcxproj" beforeDir="false" afterPath="$PROJECT_DIR$/Lab5.vcxproj" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -21,7 +23,6 @@
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
   </component>
   <component name="HighlightingSettingsPerFile">
-    <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
     <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
     <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
     <setting file="mock:///dummy.cpp" root0="SKIP_HIGHLIGHTING" />
@@ -123,7 +124,9 @@
       <option name="presentableId" value="Default" />
       <updated>1716034005757</updated>
       <workItem from="1716034006845" duration="3387000" />
-      <workItem from="1716038053279" duration="1156000" />
+      <workItem from="1716038053279" duration="1886000" />
+      <workItem from="1716044502011" duration="334000" />
+      <workItem from="1716052816549" duration="544000" />
     </task>
     <servers />
   </component>
