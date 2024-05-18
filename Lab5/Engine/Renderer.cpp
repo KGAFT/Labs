@@ -6,12 +6,9 @@
 #include "../ImGUI/imgui.h"
 #include "../ImGUI/imgui_impl_dx11.h"
 #include "../ImGUI/imgui_impl_win32.h"
-#include <DDSTextureLoader.h>
 
-#include "CubemapGenerator.h"
 #include "tiny_obj_loader.h"
 #include "../STB/stb_image.h"
-#include "../Utils/FileSystemUtils.h"
 
 #define PI 3.14159265359
 
@@ -49,9 +46,9 @@ Renderer::Renderer(Window* window) : engineWindow(window)
     D3D11_SAMPLER_DESC desc = {};
 
     desc.Filter = D3D11_FILTER_ANISOTROPIC;
-    desc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
-    desc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
-    desc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+    desc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+    desc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+    desc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
     desc.MinLOD = -D3D11_FLOAT32_MAX;
     desc.MaxLOD = D3D11_FLOAT32_MAX;
     desc.MipLODBias = 0.0f;
@@ -63,6 +60,18 @@ Renderer::Renderer(Window* window) : engineWindow(window)
     {
         throw std::runtime_error("Failed to create sampler");
     }
+
+    desc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+    desc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+    desc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+    desc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+
+    if (FAILED(device.getDevice()->CreateSamplerState(&desc, &avgSampler)))
+    {
+        throw std::runtime_error("Failed to create sampler");
+    }
+
+    
     D3D11_RASTERIZER_DESC cmdesc = {};
     ZeroMemory(&cmdesc, sizeof(D3D11_RASTERIZER_DESC));
     cmdesc.FillMode = D3D11_FILL_SOLID;
@@ -136,7 +145,7 @@ void Renderer::drawFrame()
     cubeMapShader->bind(device.getDeviceContext());
     device.getDeviceContext()->PSSetSamplers(0, 1, &sampler);
     skyboxConfigConstant->bindToVertexShader(device.getDeviceContext());
-    device.getDeviceContext()->PSSetShaderResources(0, 1, &cubeMapTextureResourceView);
+    device.getDeviceContext()->PSSetShaderResources(0, 1, &cubemap.cubemapSRV);
     device.getDeviceContext()->OMSetDepthStencilState(skyboxDepthState, 1);
     device.getDeviceContext()->RSSetState(skyboxRasterState);
     cubeMapShader->draw(device.getDeviceContext(), sphereIndex, sphereVertex);
@@ -149,8 +158,12 @@ void Renderer::drawFrame()
     annotation->BeginEvent(L"Rendering pbr light");
 #endif
     shader->bind(device.getDeviceContext());
-    device.getDeviceContext()->PSSetSamplers(0, 1, &sampler);
-    device.getDeviceContext()->PSSetShaderResources(0, 1, &irradianceTextureResourceView);
+    ID3D11SamplerState* samplers[] = {sampler, avgSampler};
+    
+    device.getDeviceContext()->PSSetSamplers(0, 2, samplers);
+    ID3D11ShaderResourceView* resources[] = {cubemap.irradianceSRV, cubemap.prefilteredSRV, cubemap.brdfSRV};
+    
+    device.getDeviceContext()->PSSetShaderResources(0, 3, resources);
 
     constantBuffer->bindToVertexShader(device.getDeviceContext());
     lightConstant->bindToPixelShader(device.getDeviceContext());
@@ -221,11 +234,17 @@ void Renderer::release()
     sampler->Release();
     skyboxDepthState->Release();
     skyboxRasterState->Release();
-    cubeMapTextureResourceView->Release();
-    cubeMapTexture->Release();
+    cubemap.cubemapSRV->Release();
+    cubemap.cubemapTexture->Release();
     
-    irradianceTextureResourceView->Release();
-    irradianceTexture->Release();
+    cubemap.irradianceSRV->Release();
+    cubemap.irradianceTexture->Release();
+    
+    cubemap.prefilteredSRV->Release();
+    cubemap.prefilteredTexture->Release();
+    cubemap.brdfTexture->Release();
+    cubemap.brdfSRV->Release();
+    
     annotation->Release();
 
     ImGui_ImplWin32_Shutdown();
@@ -403,12 +422,8 @@ void Renderer::loadImgui()
 void Renderer::loadCubeMap()
 {
     CubemapGenerator generator(&device);
-    HDRCubemap cubemap{};
     generator.loadHDRCubemap("hdr_room.hdr", &cubemap);
-    cubeMapTexture = cubemap.cubemapTexture;
-    cubeMapTextureResourceView = cubemap.cubemapSRV;
-    irradianceTexture = cubemap.irradianceTexture;
-    irradianceTextureResourceView = cubemap.irradianceSRV;
+
     cubemap.sourceTexture->Release();
     cubemap.sourceResourceView->Release();
     generator.destroy();

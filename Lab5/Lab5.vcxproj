@@ -184,6 +184,7 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
     <ClCompile Include="STB\stb_image.cpp" />
+    <ClCompile Include="Utils\FileSystemUtils.cpp" />
     <ClCompile Include="Window\Window.cpp" />
   </ItemGroup>
   <ItemGroup>

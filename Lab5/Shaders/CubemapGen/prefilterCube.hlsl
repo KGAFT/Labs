@@ -64,8 +64,7 @@ float3 prefilterEnvMap(float3 R, float roughness)
     float3 V = R;
     float3 color = float3(0, 0, 0);
     float totalWeight = 0.0;
-    float width;
-    cubeTexture.GetDimensions(0, width);
+    float width = 128;
     float envMapDim = width;
     static const uint SAMPLE_COUNT = 1024u;
     for (uint i = 0u; i < SAMPLE_COUNT; i++)

@@ -6,7 +6,7 @@
 #include "../DXShader/ConstantBuffer.h"
 #include "Camera/Camera.h"
 #include <d3d11_1.h>
-
+#include "CubemapGenerator.h"
 struct PBRConfiguration
 {
     int defaultFunction = 1;
@@ -82,15 +82,14 @@ private:
     ConstantBuffer* skyboxConfigConstant;
     ToneMapper* toneMapper;
     ID3D11SamplerState* sampler;
+    ID3D11SamplerState* avgSampler;
+    
     VertexBuffer* sphereVertex = nullptr;
     IndexBuffer* sphereIndex = nullptr;
     Camera camera;
     ID3DUserDefinedAnnotation* annotation;
     
-    ID3D11Texture2D* cubeMapTexture;
-    ID3D11ShaderResourceView* cubeMapTextureResourceView;
-    ID3D11Texture2D* irradianceTexture;
-    ID3D11ShaderResourceView* irradianceTextureResourceView;
+    HDRCubemap cubemap;
 
     ID3D11DepthStencilState* skyboxDepthState;
     ID3D11RasterizerState* skyboxRasterState;
