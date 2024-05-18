@@ -16,7 +16,7 @@ struct PBRConfiguration
 
     float metallic = 0.9;
     float roughness = 0.03;
-    float ambientIntensity = 3.0f;
+    float ambientIntensity = 15.0f;
     float alignment;
 };
 

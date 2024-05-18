@@ -83,10 +83,9 @@ float3 fresnelFunctionMetal(float3 objColor, float3 startFresnelSchlick,  float3
     return f + (float3(1.0f, 1.0f, 1.0f) - f) * pow(1.0f - max(dot(h, worldViewVector), 0.0f), 5);
 }
 
-float3 fresnelRoughnessFunction(in float3 objColor, in float3 n, in float3 v, in float metalness, in float roughness)
+float3 F_SchlickR(float cosTheta, float3 F0, float roughness)
 {
-    float3 f = float3(0.04f, 0.04f, 0.04f) * (1 - metalness) + objColor * metalness;
-    return f + (max(float3(1.0f, 1.0f, 1.0f) - float3(roughness, roughness, roughness), f) - f) * pow(1.0f - max(dot(n, v), 0.0f), 5);
+    return F0 + (max(float3(1.0 - roughness, 1.0-roughness, 1.0-roughness), F0) - F0) * pow(1.0 - cosTheta, 5.0);
 }
 
 float3 processPointLight(PointLight light, float3 normals, float3 fragmentPosition, float3 worldViewVector,
@@ -147,6 +146,17 @@ float3 processPointLight(PointLight light, float3 normals, float3 fragmentPositi
     }
 }
 
+float3 prefilteredReflection(float3 R, float roughness)
+{
+    const float MAX_REFLECTION_LOD = 9.0; 
+    float lod = roughness * MAX_REFLECTION_LOD;
+    float lodf = floor(lod);
+    float lodc = ceil(lod);
+    float3 a =  prefilteredTexture.SampleLevel(prefilteredSampler, R, lodf).rgb;
+    float3 b =  prefilteredTexture.SampleLevel(prefilteredSampler, R, lodc).rgb;
+    return lerp(a, b, lod - lodf);
+}
+
 
 float4 main(PixelShaderInput psInput) : SV_Target
 {
@@ -154,16 +164,11 @@ float4 main(PixelShaderInput psInput) : SV_Target
     float3 worldViewVector = normalize(cameraPosition - psInput.worldPos);
 
     
-    float3 irradiance = irradianceTexture.Sample(irradianceSampler, normal).xyz;
-    float3 R = reflect(-worldViewVector, normal);
-    static const float MAX_REFLECTION_LOD = 4.0f;
-    float4 brdf = brdfTexture.Sample(prefilteredSampler, float2(max(dot(normal, worldViewVector), 0.0f), roughness));
-    float3 prefilteredColor = prefilteredTexture.SampleLevel(prefilteredSampler, R, roughness * MAX_REFLECTION_LOD);
+
     
     float3 startFresnelSchlick = float3(0.04, 0.04, 0.04);
     startFresnelSchlick = lerp(startFresnelSchlick, psInput.color, metallic);
 
-    float3 specular = prefilteredColor * (startFresnelSchlick * brdf.x + brdf.y);
 
     float3 Lo = float3(0, 0, 0);
     for (uint i = 0; i < 3; i++)
@@ -171,11 +176,22 @@ float4 main(PixelShaderInput psInput) : SV_Target
         Lo += processPointLight(lightsInfos[i], normal, psInput.worldPos, worldViewVector, startFresnelSchlick,
                                 roughness, metallic, psInput.color);
     }
-    
-    float3 finalFresnelSchlick = float3(1, 1, 1) - fresnelRoughnessFunction(psInput.color, normal, worldViewVector, metallic, roughness);
-    finalFresnelSchlick *= 1.0 - metallic+0.001;
-    float3 ambient = (float3(ambientIntensity, ambientIntensity, ambientIntensity) * irradiance*psInput.color*finalFresnelSchlick+specular);
-    float3 rescolor = ambient + Lo;
+    float3 R = reflect(-worldViewVector, normal); 
+    float2 brdf = brdfTexture.Sample(prefilteredSampler, float2(max(dot(normal, worldViewVector), 0.0f), roughness)).rg;
+    float3 reflection = prefilteredReflection(R, roughness).rgb;	
+    float3 irradiance = irradianceTexture.Sample(prefilteredSampler, normal).rgb;
+
+    float3 diffuse = irradiance * psInput.color;	
+
+    float3 F = F_SchlickR(max(dot(normal, worldViewVector), 0.0), startFresnelSchlick, roughness);
+
+    float3 specular = reflection * (F * brdf.x + brdf.y);
+
+    // Ambient part
+    float3 kD = 1.0 - F;
+    kD *= 1.0 - metallic;	  
+    float3 ambient = (kD * diffuse + specular);
+    float3 rescolor = ambientIntensity*ambient + Lo;
     
     return float4(rescolor, 1.0f);
 }
